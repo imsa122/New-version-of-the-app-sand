@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Location Permissions -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>نحتاج الموقع لإرساله للعائلة في حالات الطوارئ</string>
+	
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>نحتاج الموقع دائماً لمراقبة السياج الجغرافي وإرسال التنبيهات عند الخروج من المنطقة المحددة</string>
+	
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>نحتاج الموقع دائماً لمراقبة السياج الجغرافي وحمايتك</string>
+	
+	<!-- Microphone Permission -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>نحتاج الميكروفون للاستماع للأوامر الصوتية ومساعدتك في استخدام التطبيق</string>
+	
+	<!-- Speech Recognition Permission -->
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>نحتاج التعرف على الصوت لفهم أوامرك الصوتية بالعربية</string>
+	
+	<!-- Motion Permission -->
+	<key>NSMotionUsageDescription</key>
+	<string>نحتاج مستشعر الحركة لاكتشاف السقوط وحمايتك في حالات الطوارئ</string>
+	
+	<!-- Contacts Permission (Optional) -->
+	<key>NSContactsUsageDescription</key>
+	<string>نحتاج الوصول لجهات الاتصال لتسهيل إضافة أفراد العائلة</string>
+	
+	<!-- Background Modes -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
+	
+	<!-- Required Device Capabilities -->
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>armv7</string>
+		<string>location-services</string>
+	</array>
+	
+	<!-- Supported Interface Orientations -->
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	
+	<!-- App Transport Security -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+	</dict>
+</dict>
+</plist>

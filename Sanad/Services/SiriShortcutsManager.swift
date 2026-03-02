@@ -131,19 +131,16 @@ class SiriShortcutsManager {
     // MARK: - Delete Shortcuts
 
     /// حذف جميع الاختصارات - Delete all shortcuts
+    /// Uses NSUserActivity persistent identifier deletion (correct public API)
     func deleteAllShortcuts() {
-        let identifiers = ShortcutIdentifier.allCases.map { $0.rawValue }
-        INVoiceShortcutCenter.shared.getAllVoiceShortcuts { shortcuts, error in
-            guard let shortcuts = shortcuts else { return }
-            let toDelete = shortcuts.filter { identifiers.contains($0.shortcut.userActivity?.activityType ?? "") }
-            for shortcut in toDelete {
-                INVoiceShortcutCenter.shared.deleteVoiceShortcut(withIdentifier: shortcut.identifier) { error in
-                    if let error = error {
-                        print("❌ خطأ في حذف الاختصار: \(error.localizedDescription)")
-                    }
-                }
-            }
+        let identifiers = ShortcutIdentifier.allCases.map {
+            NSUserActivityPersistentIdentifier($0.rawValue)
         }
+        NSUserActivity.deleteSavedUserActivities(withPersistentIdentifiers: identifiers) {
+            print("✅ تم حذف جميع اختصارات Siri")
+        }
+        // Clear Siri suggestions list as well
+        INVoiceShortcutCenter.shared.setShortcutSuggestions([])
     }
 }
 

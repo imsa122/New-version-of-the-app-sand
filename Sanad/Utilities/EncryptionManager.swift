@@ -154,32 +154,41 @@ class EncryptionManager {
     // MARK: - Medication Encryption
     
     /// Encrypt medication (sensitive data only)
+    // MARK: - Medication Encryption
+
+    /// Encrypt medication (sensitive data only)
     func encryptMedication(_ medication: Medication) throws -> EncryptedMedication {
-        let encryptedNotes = medication.notes.isEmpty ? "" : try encryptString(medication.notes)
+        
+        let notes = medication.notes ?? ""
+        let encryptedNotes = notes.isEmpty ? "" : try encryptString(notes)
         
         return EncryptedMedication(
             id: medication.id,
-            name: medication.name, // Name not encrypted for display
+            name: medication.name,
             dosage: medication.dosage,
             times: medication.times,
             isActive: medication.isActive,
             encryptedNotes: encryptedNotes
         )
     }
-    
+
     /// Decrypt medication
     func decryptMedication(_ encryptedMedication: EncryptedMedication) throws -> Medication {
-        let decryptedNotes = encryptedMedication.encryptedNotes.isEmpty ? "" : try decryptString(encryptedMedication.encryptedNotes)
+        
+        let decryptedNotes = encryptedMedication.encryptedNotes.isEmpty
+            ? ""
+            : try decryptString(encryptedMedication.encryptedNotes)
         
         return Medication(
             id: encryptedMedication.id,
             name: encryptedMedication.name,
             dosage: encryptedMedication.dosage,
             times: encryptedMedication.times,
-            isActive: encryptedMedication.isActive,
-            notes: decryptedNotes
+            notes: decryptedNotes,
+            isActive: encryptedMedication.isActive
         )
     }
+
     
     // MARK: - File Encryption
     
@@ -276,10 +285,11 @@ struct EncryptedMedication: Codable {
     let id: UUID
     let name: String
     let dosage: String
-    let times: [Date]
+    let times: [MedicationTime]   // الحل
     let isActive: Bool
     let encryptedNotes: String
 }
+
 
 // MARK: - Encryption Extensions
 

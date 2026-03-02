@@ -4,6 +4,7 @@
 //
 //  Enhanced ViewModel for home screen with error handling and validation
 //
+import CoreLocation
 
 import Foundation
 import Combine

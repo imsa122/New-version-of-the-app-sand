@@ -17,7 +17,11 @@ struct AppSettings: Codable {
     var voiceCommandsEnabled: Bool
     var emergencyTimeout: Int // بالثواني
     var language: String
-    
+    var colorScheme: AppColorScheme       // ✅ NEW: Dark Mode preference
+    var healthKitEnabled: Bool            // ✅ NEW: HealthKit toggle
+    var iCloudSyncEnabled: Bool           // ✅ NEW: iCloud sync toggle
+    var prayerNotificationsEnabled: Bool  // ✅ NEW: Prayer notifications toggle
+
     init(
         fontSize: FontSize = .large,
         homeLocation: HomeLocation? = nil,
@@ -25,7 +29,11 @@ struct AppSettings: Codable {
         fallDetectionEnabled: Bool = true,
         voiceCommandsEnabled: Bool = true,
         emergencyTimeout: Int = 30,
-        language: String = "ar"
+        language: String = "ar",
+        colorScheme: AppColorScheme = .system,
+        healthKitEnabled: Bool = false,
+        iCloudSyncEnabled: Bool = false,
+        prayerNotificationsEnabled: Bool = false
     ) {
         self.fontSize = fontSize
         self.homeLocation = homeLocation
@@ -34,7 +42,18 @@ struct AppSettings: Codable {
         self.voiceCommandsEnabled = voiceCommandsEnabled
         self.emergencyTimeout = emergencyTimeout
         self.language = language
+        self.colorScheme = colorScheme
+        self.healthKitEnabled = healthKitEnabled
+        self.iCloudSyncEnabled = iCloudSyncEnabled
+        self.prayerNotificationsEnabled = prayerNotificationsEnabled
     }
+}
+
+/// تفضيل المظهر - App Color Scheme Preference
+enum AppColorScheme: String, Codable, CaseIterable {
+    case system = "تلقائي"
+    case light  = "فاتح"
+    case dark   = "داكن"
 }
 
 /// حجم الخط - Font Size

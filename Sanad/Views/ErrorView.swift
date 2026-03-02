@@ -15,121 +15,91 @@ struct ErrorView: View {
     @State private var isAnimating = false
     
     var body: some View {
-        VStack(spacing: 25) {
-            Spacer()
+        ZStack {
+            // الخلفية
+            Image("background")
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
             
-            // Error Icon with Animation
-            ZStack {
-                Circle()
-                    .fill(severityColor.opacity(0.1))
-                    .frame(width: 120, height: 120)
-                    .scaleEffect(isAnimating ? 1.1 : 1.0)
-                    .animation(
-                        Animation.easeInOut(duration: 1.5)
-                            .repeatForever(autoreverses: true),
-                        value: isAnimating
-                    )
+            // طبقة شفافة لتحسين وضوح النص
+            Color.black.opacity(0.15)
+                .ignoresSafeArea()
+            
+            // المحتوى
+            VStack(spacing: 25) {
+                Spacer()
                 
-                Image(systemName: errorIcon)
-                    .font(.system(size: 50))
-                    .foregroundColor(severityColor)
-            }
-            .padding(.bottom, 10)
-            
-            // Error Title
-            Text(error.errorDescription ?? "حدث خطأ")
-                .font(.title2)
-                .fontWeight(.bold)
-                .multilineTextAlignment(.center)
-                .foregroundColor(.primary)
-                .padding(.horizontal)
-            
-            // Failure Reason (if available)
-            if let reason = error.failureReason {
-                Text(reason)
-                    .font(.body)
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal)
-            }
-            
-            // Recovery Suggestion
-            if let suggestion = error.recoverySuggestion {
-                VStack(spacing: 12) {
-                    HStack {
-                        Image(systemName: "lightbulb.fill")
-                            .foregroundColor(.orange)
-                        Text("الحل المقترح")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                    }
+                // Error Icon with Animation
+                ZStack {
+                    Circle()
+                        .fill(severityColor.opacity(0.15))
+                        .frame(width: 120, height: 120)
+                        .scaleEffect(isAnimating ? 1.1 : 1.0)
+                        .animation(
+                            Animation.easeInOut(duration: 1.5)
+                                .repeatForever(autoreverses: true),
+                            value: isAnimating
+                        )
                     
-                    Text(suggestion)
+                    Image(systemName: errorIcon)
+                        .font(.system(size: 50))
+                        .foregroundColor(severityColor)
+                }
+                .padding(.bottom, 10)
+                
+                // Error Title
+                Text(error.errorDescription ?? "حدث خطأ")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.white)
+                    .padding(.horizontal)
+                
+                // Failure Reason
+                if let reason = error.failureReason {
+                    Text(reason)
                         .font(.body)
                         .multilineTextAlignment(.center)
-                        .foregroundColor(.secondary)
-                        .padding()
-                        .background(Color.orange.opacity(0.1))
-                        .cornerRadius(12)
-                }
-                .padding(.horizontal)
-            }
-            
-            Spacer()
-            
-            // Action Buttons
-            VStack(spacing: 12) {
-                // Retry Button
-                if let retry = retryAction {
-                    Button(action: {
-                        HapticManager.impact(.medium)
-                        retry()
-                    }) {
-                        HStack(spacing: 10) {
-                            Image(systemName: "arrow.clockwise")
-                            Text("حاول مرة أخرى")
-                        }
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(
-                            LinearGradient(
-                                colors: [Color.blue, Color.blue.opacity(0.8)],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .cornerRadius(15)
-                        .shadow(color: Color.blue.opacity(0.3), radius: 5, x: 0, y: 3)
-                    }
+                        .foregroundColor(.white.opacity(0.9))
+                        .padding(.horizontal)
                 }
                 
-                // Dismiss Button
-                if let dismiss = dismissAction {
-                    Button(action: {
-                        HapticManager.selection()
-                        dismiss()
-                    }) {
-                        Text("إغلاق")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity)
+                // Recovery Suggestion
+                if let suggestion = error.recoverySuggestion {
+                    VStack(spacing: 12) {
+                        HStack {
+                            Image(systemName: "lightbulb.fill")
+                                .foregroundColor(.orange)
+                            Text("الحل المقترح")
+                                .font(.headline)
+                                .font(.headline)
+                                .foregroundColor(.white)
+                        }
+                        
+                        Text(suggestion)
+                            .font(.body)
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(.white)
                             .padding()
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(15)
+                            .background(Color.white.opacity(0.15))
+                            .cornerRadius(12)
                     }
+                    .padding(.horizontal)
                 }
+                
+                Spacer()
+                
+                actionButtons
             }
-            .padding(.horizontal)
-            .padding(.bottom)
+            .padding()
         }
-        .padding()
         .onAppear {
             isAnimating = true
             HapticManager.notification(.error)
         }
     }
+
     
     // MARK: - Computed Properties
     
@@ -175,6 +145,7 @@ struct ErrorView: View {
     }
     
     private var severityColor: Color {
+        
         switch error.severity {
         case .critical:
             return .red
@@ -184,8 +155,57 @@ struct ErrorView: View {
             return .yellow
         case .low:
             return .blue
+            
         }
+        
     }
+    private var actionButtons: some View {
+        VStack(spacing: 12) {
+            
+            if let retry = retryAction {
+                Button(action: {
+                    HapticManager.impact(.medium)
+                    retry()
+                }) {
+                    HStack(spacing: 10) {
+                        Image(systemName: "arrow.clockwise")
+                        Text("حاول مرة أخرى")
+                    }
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(
+                        LinearGradient(
+                            colors: [Color.blue, Color.blue.opacity(0.8)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(15)
+                    .shadow(color: Color.blue.opacity(0.4), radius: 5, x: 0, y: 3)
+                }
+            }
+            
+            if let dismiss = dismissAction {
+                Button(action: {
+                    HapticManager.selection()
+                    dismiss()
+                }) {
+                    Text("إغلاق")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.white.opacity(0.15))
+                        .cornerRadius(15)
+                }
+            }
+        }
+        .padding(.horizontal)
+        .padding(.bottom)
+    }
+
 }
 
 // MARK: - Compact Error View

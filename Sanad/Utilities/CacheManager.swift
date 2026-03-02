@@ -138,19 +138,24 @@ class CacheManager {
     
     /// Get object from cache (checks memory first, then disk)
     func get<T: Codable>(forKey key: String) -> T? {
-        // Try memory cache first (fastest)
-        if let object: T = getFromMemory(forKey: key) {
-            return object
+
+        // Try memory cache first
+        if let object = memoryCache.object(forKey: key as NSString) {
+            if let typedObject = object as? T {
+                print("✅ Memory cache hit: \(key)")
+                return typedObject
+            }
         }
-        
+
         // Try disk cache
         if let object: T = try? getFromDisk(forKey: key) {
             return object
         }
-        
+
         print("❌ Cache miss: \(key)")
         return nil
     }
+
     
     /// Cache object (both memory and disk)
     func cache<T: Codable>(_ object: T, forKey key: String) {

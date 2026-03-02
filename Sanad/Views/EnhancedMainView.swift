@@ -2,65 +2,84 @@
 //  EnhancedMainView.swift
 //  Sanad
 //
+//  Updated: Added DailyStatusCard, ActivityLog navigation,
+//           Health Dashboard navigation, Dark Mode support
+//
 
 import SwiftUI
 
 struct EnhancedMainView: View {
-    
+
     @StateObject private var viewModel = HomeViewModel()
     @StateObject private var voiceManager = EnhancedVoiceManager.shared
-    
+    @StateObject private var locationManager = LocationManager.shared
+    @StateObject private var emergencyManager = EnhancedEmergencyManager.shared
+
     @State private var showSettings = false
     @State private var showMedications = false
-    @State private var showActivityLog = false   // ✅ جديد
-    
+    @State private var showActivityLog = false
+    @State private var showHealthDashboard = false
+    @State private var showPrayerTimes = false
+
     var body: some View {
         NavigationStack {
             ZStack {
-                
-                // الخلفية
+
+                // 🎨 Adaptive background — supports Dark Mode
                 LinearGradient(
-                    colors: [Color.blue.opacity(0.1), Color.white],
+                    colors: [
+                        Color(red: 0.88, green: 0.96, blue: 0.93).opacity(0.6),
+                        Color(.systemBackground)
+                    ],
                     startPoint: .top,
                     endPoint: .bottom
                 )
                 .ignoresSafeArea()
-                
-                VStack(spacing: 25) {
-                    
-                    // العنوان
-                    headerView
-                    
-                    // 🟢 بطاقة الحالة اليومية
-                    DailyStatusCard(
-                        isInsideHomeArea: true,
-                        hasActiveAlert: viewModel.showEmergencyAlert || viewModel.showFallAlert
-                    )
-                    
-                    Spacer()
-                    
-                    // الأزرار الرئيسية
-                    mainButtonsView
-                    
-                    Spacer()
-                    
-                    // زر الأوامر الصوتية
-                    voiceCommandButton
-                    
-                    // الشريط السفلي
-                    bottomNavigationView
+
+                ScrollView {
+                    VStack(spacing: 20) {
+
+                        headerView
+
+                        // ✅ NEW: Daily Status Card — shows medication, location, alert status
+                        DailyStatusCard(
+                            isInsideHomeArea: locationManager.isInsideHomeArea,
+                            hasActiveAlert: emergencyManager.isEmergencyActive
+                        )
+
+                        mainButtonsView
+
+                        voiceCommandButton
+
+                        bottomNavigationView
+                    }
+                    .padding()
                 }
-                .padding()
             }
+
+            .navigationBarHidden(true)
+
+            // MARK: - Navigation Destinations
             .navigationDestination(isPresented: $showSettings) {
                 SettingsView()
             }
             .navigationDestination(isPresented: $showMedications) {
                 MedicationListView()
             }
-            .navigationDestination(isPresented: $showActivityLog) {   // ✅ ربط شاشة السجل
+            // ✅ NEW: Activity Log navigation
+            .navigationDestination(isPresented: $showActivityLog) {
                 ActivityLogView()
             }
+            // ✅ NEW: Health Dashboard navigation
+            .navigationDestination(isPresented: $showHealthDashboard) {
+                HealthDashboardView()
+            }
+            // ✅ NEW: Prayer Times navigation
+            .navigationDestination(isPresented: $showPrayerTimes) {
+                PrayerTimesView()
+            }
+
+            // MARK: - Sheets
             .sheet(isPresented: $viewModel.showFavoritesSelection) {
                 FavoritesSelectionView { selectedContacts in
                     viewModel.callSelectedContacts(selectedContacts)
@@ -75,8 +94,10 @@ struct EnhancedMainView: View {
             .sheet(isPresented: $viewModel.showEmergencyOptions) {
                 EmergencyOptionsView()
             }
+
+            // MARK: - Alerts
             .alert("تنبيه طوارئ", isPresented: $viewModel.showEmergencyAlert) {
-                Button("أنا بخير - إلغاء", role: .cancel) {
+                Button("أنا بخير", role: .cancel) {
                     viewModel.cancelEmergency()
                 }
                 Button("أحتاج مساعدة!", role: .destructive) {
@@ -98,147 +119,190 @@ struct EnhancedMainView: View {
         }
         .environment(\.layoutDirection, .rightToLeft)
     }
-    
+
     // MARK: - Header
-    
+
     private var headerView: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 8) {
+            Image("sanadlogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 100, height: 100)
+                .shadow(radius: 5)
+
             Text("سند")
-                .font(.system(size: 50, weight: .bold))
-                .foregroundColor(.blue)
-            
-            Text("رفيقك الذكي")
-                .font(.title3)
-                .foregroundColor(.gray)
+                .font(.system(size: 36, weight: .bold))
+                .foregroundColor(.green)
+
+            Text("رفيقك في الأمان")
+                .font(.headline)
+                .foregroundColor(.secondary)
         }
+        .padding(.top, 16)
     }
-    
+
     // MARK: - Main Buttons
-    
+
     private var mainButtonsView: some View {
-        VStack(spacing: 25) {
-            
-            BigButton(
-                title: "📞 اتصل بالعائلة",
-                backgroundColor: .green,
+        VStack(spacing: 16) {
+            ModernBigButton(
+                title: "اتصل بالعائلة",
+                icon: "phone.fill",
+                color: .green,
                 action: viewModel.callFamily
             )
-            
-            BigButton(
-                title: "📍 أرسل موقعي",
-                backgroundColor: .blue,
+            ModernBigButton(
+                title: "أرسل موقعي",
+                icon: "location.fill",
+                color: .blue,
                 action: viewModel.sendLocation
             )
-            
-            BigButton(
-                title: "🚨 المساعدة الطارئة",
-                backgroundColor: .red,
+            ModernBigButton(
+                title: "المساعدة الطارئة",
+                icon: "siren.fill",
+                color: .red,
                 action: viewModel.requestEmergencyHelp
             )
         }
     }
-    
-    // MARK: - Voice Command Button
-    
+
+    // MARK: - Voice Button
+
     private var voiceCommandButton: some View {
-        Button(action: {
+        Button {
             if voiceManager.isListening {
                 viewModel.stopVoiceListening()
             } else {
                 viewModel.startVoiceListening()
             }
-        }) {
-            HStack {
+        } label: {
+            HStack(spacing: 10) {
                 Image(systemName: voiceManager.isListening ? "mic.fill" : "mic")
                     .font(.title2)
-                
                 Text(voiceManager.isListening ? "جاري الاستماع..." : "اضغط للأوامر الصوتية")
                     .font(.headline)
             }
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
-            .padding()
-            .background(voiceManager.isListening ? Color.orange : Color.purple)
-            .cornerRadius(15)
+            .frame(height: 60)
+            .background(
+                LinearGradient(
+                    colors: voiceManager.isListening
+                        ? [Color.orange, Color.orange.opacity(0.8)]
+                        : [Color.purple, Color.purple.opacity(0.8)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .cornerRadius(20)
+            .shadow(radius: 8)
         }
         .animation(.easeInOut, value: voiceManager.isListening)
     }
-    
+
     // MARK: - Bottom Navigation
-    
+    // ✅ Updated: Added Activity Log, Health, Prayer Times buttons
+
     private var bottomNavigationView: some View {
-        HStack(spacing: 15) {
-            
-            NavigationButton(
-                icon: "pills.fill",
-                title: "الأدوية",
-                color: .orange
-            ) {
-                showMedications = true
+        VStack(spacing: 12) {
+            // Row 1
+            HStack(spacing: 12) {
+                SmallCardButton(title: "الأدوية", icon: "pills.fill", color: .orange) {
+                    showMedications = true
+                }
+                SmallCardButton(title: "الصحة", icon: "heart.fill", color: .pink) {
+                    showHealthDashboard = true
+                }
             }
-            
-            NavigationButton(
-                icon: "list.bullet.rectangle",   // ✅ زر السجل
-                title: "السجل",
-                color: .blue
-            ) {
-                showActivityLog = true
+            // Row 2
+            HStack(spacing: 12) {
+                SmallCardButton(title: "أوقات الصلاة", icon: "moon.stars.fill", color: .indigo) {
+                    showPrayerTimes = true
+                }
+                SmallCardButton(title: "سجل النشاط", icon: "list.bullet.clipboard.fill", color: .teal) {
+                    showActivityLog = true
+                }
             }
-            
-            NavigationButton(
-                icon: "gearshape.fill",
-                title: "الإعدادات",
-                color: .gray
-            ) {
-                showSettings = true
+            // Row 3
+            HStack(spacing: 12) {
+                SmallCardButton(title: "الإعدادات", icon: "gearshape.fill", color: .gray) {
+                    showSettings = true
+                }
             }
         }
+        .padding(.bottom, 8)
     }
 }
 
-// MARK: - Big Button
 
-struct BigButton: View {
+// MARK: - Modern Big Button
+
+struct ModernBigButton: View {
     let title: String
-    var backgroundColor: Color = .blue
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 24, weight: .bold))
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 80)
-                .background(backgroundColor)
-                .cornerRadius(20)
-                .shadow(color: backgroundColor.opacity(0.3), radius: 10, x: 0, y: 5)
-        }
-    }
-}
-
-// MARK: - Navigation Button
-
-struct NavigationButton: View {
     let icon: String
-    let title: String
     let color: Color
     let action: () -> Void
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 8) {
+            HStack(spacing: 15) {
+                
                 Image(systemName: icon)
-                    .font(.system(size: 28))
+                    .font(.title2)
                 
                 Text(title)
-                    .font(.caption)
+                    .font(.system(size: 22, weight: .bold))
+                
+                Spacer()
             }
-            .foregroundColor(color)
-            .frame(maxWidth: .infinity)
+            .foregroundColor(.white)
             .padding()
-            .background(color.opacity(0.1))
-            .cornerRadius(15)
+            .frame(height: 75)
+            .background(
+                LinearGradient(
+                    colors: [color, color.opacity(0.8)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .cornerRadius(22)
+            .shadow(color: color.opacity(0.3), radius: 10, x: 0, y: 5)
         }
     }
+}
+
+
+// MARK: - Small Card Button
+
+struct SmallCardButton: View {
+    let title: String
+    let icon: String
+    let color: Color
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 10) {
+                Image(systemName: icon)
+                    .font(.title)
+                    .foregroundColor(color)
+                
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(.ultraThinMaterial)
+            .cornerRadius(20)
+            .shadow(radius: 5)
+        }
+    }
+}
+
+
+// MARK: - Preview
+
+#Preview {
+    EnhancedMainView()
 }

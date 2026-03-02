@@ -32,7 +32,11 @@ struct EmergencyOptionsView: View {
                 VStack(spacing: 0) {
                     // رأس الصفحة - Header
                     headerView
-                    
+                    Image("sanadlogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 90)
+
                     ScrollView {
                         VStack(spacing: 25) {
                             // الخيار الأول: الاتصال بالعائلة - Call Family

@@ -19,6 +19,11 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var location: CLLocation?
     @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
     @Published var isOutsideGeofence: Bool = false
+
+    /// هل المستخدم داخل منطقة المنزل - Is user inside home area
+    var isInsideHomeArea: Bool {
+        return !isOutsideGeofence
+    }
     
     private var geofenceRegion: CLCircularRegion?
     

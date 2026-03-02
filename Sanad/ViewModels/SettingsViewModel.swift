@@ -111,8 +111,15 @@ class SettingsViewModel: ObservableObject {
         storageManager.updateVoiceCommands(enabled)
     }
     
+    // MARK: - Save Settings
+
+    /// حفظ الإعدادات - Save Settings (generic save for any setting change)
+    func saveSettings() {
+        storageManager.saveSettings(settings)
+    }
+
     // MARK: - Emergency Timeout
-    
+
     /// تحديث مهلة الطوارئ - Update Emergency Timeout
     func updateEmergencyTimeout(_ timeout: Int) {
         settings.emergencyTimeout = timeout

@@ -1,5 +1,12 @@
+//
+//  OnboardingView.swift
+//  Sanad
+//
+//  Beautiful onboarding flow for new users
+//  Introduces app features with elegant Arabic UI
+//
+
 import SwiftUI
-import AVFoundation
 
 struct OnboardingView: View {
     
@@ -7,102 +14,221 @@ struct OnboardingView: View {
     
     @State private var currentPage = 0
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-    @AppStorage("onboardingVoiceEnabled") private var voiceEnabled = true
+    @State private var isAnimating = false
     
     let pages: [OnboardingPage] = [
-        
         OnboardingPage(
             icon: "heart.fill",
             title: "مرحباً بك في سند",
-            description: "تطبيق بسيط يساعدك تتواصل مع عائلتك وتحصل على المساعدة بسهولة",
+            description: "رفيقك الذكي للعناية بكبار السن وذوي الاحتياجات الخاصة",
             color: .blue,
             features: []
         ),
-        
         OnboardingPage(
             icon: "phone.fill",
-            title: "كل شيء بضغطة زر",
-            description: "استخدم الأزرار الكبيرة للاتصال، إرسال موقعك، أو طلب المساعدة",
+            title: "اتصل بالعائلة بسهولة",
+            description: "اتصل بأحبائك بضغطة زر واحدة",
             color: .green,
             features: [
-                "اتصال سريع بالعائلة",
-                "مشاركة موقعك فوراً",
-                "زر طوارئ واضح وآمن"
+                "اتصال سريع بالمفضلين",
+                "أزرار كبيرة وواضحة",
+                "أوامر صوتية بالعربية"
             ]
         ),
-        
+        OnboardingPage(
+            icon: "location.fill",
+            title: "شارك موقعك",
+            description: "أرسل موقعك الحالي للعائلة فوراً عبر واتساب أو الرسائل",
+            color: .blue,
+            features: [
+                "مشاركة فورية للموقع",
+                "رابط خرائط جوجل",
+                "إرسال عبر واتساب أو SMS"
+            ]
+        ),
+        OnboardingPage(
+            icon: "exclamationmark.triangle.fill",
+            title: "المساعدة الطارئة",
+            description: "احصل على المساعدة عند الحاجة مع نظام طوارئ ذكي",
+            color: .red,
+            features: [
+                "اتصال بالعائلة أو الطوارئ",
+                "إرسال تلقائي للموقع",
+                "كشف السقوط التلقائي"
+            ]
+        ),
+        OnboardingPage(
+            icon: "pills.fill",
+            title: "تذكير الأدوية",
+            description: "لن تنسى أدويتك بعد اليوم مع التذكير الصوتي",
+            color: .orange,
+            features: [
+                "تذكير صوتي بالعربية",
+                "جدولة أوقات متعددة",
+                "إشعارات منتظمة"
+            ]
+        ),
+        OnboardingPage(
+            icon: "shield.fill",
+            title: "آمن ومحمي",
+            description: "بياناتك محمية بأحدث تقنيات التشفير",
+            color: .purple,
+            features: [
+                "تشفير البيانات الحساسة",
+                "تخزين آمن في Keychain",
+                "خصوصية كاملة"
+            ]
+        ),
         OnboardingPage(
             icon: "checkmark.circle.fill",
-            title: "جاهز للبدء",
-            description: "نحن هنا لدعمك في أي وقت",
-            color: .blue,
+            title: "جاهز للبدء!",
+            description: "دعنا نبدأ رحلتك مع سند",
+            color: .green,
             features: []
         )
     ]
     
+    // MARK: - Body
+    
     var body: some View {
         ZStack {
-            
+            // Background gradient
             LinearGradient(
                 colors: [
-                    pages[currentPage].color.opacity(0.25),
+                    pages[currentPage].color.opacity(0.3),
+                    pages[currentPage].color.opacity(0.1),
                     .white
                 ],
-                startPoint: .top,
-                endPoint: .bottom
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
+            .animation(.easeInOut(duration: 0.5), value: currentPage)
             
-            VStack {
-                
-                // 🔊 زر الصوت
+            VStack(spacing: 0) {
+                // Skip button
                 HStack {
                     Spacer()
+                    if currentPage < pages.count - 1 {
+                        Button(action: completeOnboarding) {
+                            Text("تخطي")
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 10)
+                                .background(Color.white.opacity(0.5))
+                                .cornerRadius(20)
+                        }
+                        .padding()
+                    }
+                }
+                
+                Spacer()
+                
+                // Page content
+                VStack(spacing: 30) {
+                    // Icon with animation
+                    ZStack {
+                        Circle()
+                            .fill(pages[currentPage].color.opacity(0.2))
+                            .frame(width: 140, height: 140)
+                            .scaleEffect(isAnimating ? 1.1 : 1.0)
+                            .animation(
+                                Animation.easeInOut(duration: 1.5)
+                                    .repeatForever(autoreverses: true),
+                                value: isAnimating
+                            )
+                        
+                        Image(systemName: pages[currentPage].icon)
+                            .font(.system(size: 70))
+                            .foregroundColor(pages[currentPage].color)
+                            .scaleEffect(isAnimating ? 1.0 : 0.9)
+                            .animation(
+                                Animation.easeInOut(duration: 1.5)
+                                    .repeatForever(autoreverses: true),
+                                value: isAnimating
+                            )
+                    }
+                    .transition(.scale.combined(with: .opacity))
                     
-                    Button(action: toggleVoice) {
-                        Image(systemName: voiceEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
-                            .font(.title2)
-                            .foregroundColor(.primary)
-                            .padding(12)
-                            .background(Color.white.opacity(0.7))
-                            .clipShape(Circle())
+                    // Title
+                    Text(pages[currentPage].title)
+                        .font(.system(size: 32, weight: .bold))
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.primary)
+                        .padding(.horizontal, 30)
+                        .transition(.opacity)
+                    
+                    // Description
+                    Text(pages[currentPage].description)
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                        .transition(.opacity)
+                    
+                    // Features list
+                    if !pages[currentPage].features.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            ForEach(pages[currentPage].features, id: \.self) { feature in
+                                HStack(spacing: 12) {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(pages[currentPage].color)
+                                        .font(.title3)
+                                    
+                                    Text(feature)
+                                        .font(.body)
+                                        .foregroundColor(.primary)
+                                    
+                                    Spacer()
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 40)
+                        .padding(.top, 10)
+                        .transition(.opacity)
                     }
-                    .padding()
                 }
+                .animation(.easeInOut(duration: 0.3), value: currentPage)
                 
                 Spacer()
                 
-                // Swipe Pages
-                TabView(selection: $currentPage) {
-                    ForEach(pages.indices, id: \.self) { index in
-                        pageView(for: pages[index])
-                            .tag(index)
-                    }
-                }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-                
-                Spacer()
-                
-                // Page Indicator
-                HStack(spacing: 10) {
+                // Page indicator
+                HStack(spacing: 8) {
                     ForEach(0..<pages.count, id: \.self) { index in
                         Capsule()
                             .fill(index == currentPage ? pages[currentPage].color : Color.gray.opacity(0.3))
-                            .frame(width: index == currentPage ? 30 : 10, height: 8)
-                            .animation(.easeInOut, value: currentPage)
+                            .frame(width: index == currentPage ? 30 : 8, height: 8)
+                            .animation(.spring(), value: currentPage)
                     }
                 }
-                .padding(.bottom, 25)
+                .padding(.bottom, 20)
                 
-                // Next Button
+                // Next/Get Started button
                 Button(action: nextPage) {
-                    Text(currentPage == pages.count - 1 ? "ابدأ الآن" : "التالي")
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                        .background(pages[currentPage].color)
-                        .cornerRadius(18)
+                    HStack(spacing: 12) {
+                        Text(currentPage == pages.count - 1 ? "ابدأ الآن" : "التالي")
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                        
+                        Image(systemName: currentPage == pages.count - 1 ? "checkmark" : "arrow.left")
+                            .font(.title3)
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 60)
+                    .background(
+                        LinearGradient(
+                            colors: [
+                                pages[currentPage].color,
+                                pages[currentPage].color.opacity(0.8)
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(16)
+                    .shadow(color: pages[currentPage].color.opacity(0.3), radius: 10, x: 0, y: 5)
                 }
                 .padding(.horizontal, 30)
                 .padding(.bottom, 40)
@@ -110,92 +236,34 @@ struct OnboardingView: View {
         }
         .environment(\.layoutDirection, .rightToLeft)
         .onAppear {
-            speakCurrentPage()
-        }
-        .onChange(of: currentPage) { _ in
-            speakCurrentPage()
-        }
-    }
-    
-    // MARK: - Page View
-    
-    private func pageView(for page: OnboardingPage) -> some View {
-        VStack {
-            
-            ZStack {
-                Circle()
-                    .fill(page.color.opacity(0.2))
-                    .frame(width: 150, height: 150)
-                
-                Image(systemName: page.icon)
-                    .font(.system(size: 70))
-                    .foregroundColor(page.color)
-            }
-            .padding(.bottom, 30)
-            
-            Text(page.title)
-                .font(.system(size: 34, weight: .bold))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 30)
-                .padding(.bottom, 15)
-            
-            Text(page.description)
-                .font(.system(size: 22))
-                .multilineTextAlignment(.center)
-                .foregroundColor(.secondary)
-                .padding(.horizontal, 40)
-            
-            if !page.features.isEmpty {
-                VStack(alignment: .leading, spacing: 15) {
-                    ForEach(page.features, id: \.self) { feature in
-                        HStack(spacing: 12) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(page.color)
-                                .font(.title2)
-                            
-                            Text(feature)
-                                .font(.system(size: 20))
-                            
-                            Spacer()
-                        }
-                    }
-                }
-                .padding(.horizontal, 40)
-                .padding(.top, 25)
-            }
+            isAnimating = true
         }
     }
     
     // MARK: - Actions
     
     private func nextPage() {
+        HapticManager.impact(.medium)
+        
         if currentPage < pages.count - 1 {
-            currentPage += 1
+            withAnimation(.spring()) {
+                currentPage += 1
+            }
         } else {
+            completeOnboarding()
+        }
+    }
+    
+    private func completeOnboarding() {
+        HapticManager.notification(.success)
+        
+        withAnimation {
             hasCompletedOnboarding = true
         }
     }
-    
-    private func toggleVoice() {
-        voiceEnabled.toggle()
-        
-        if voiceEnabled {
-            speakCurrentPage()
-        } else {
-            SpeechManager.shared.stop()
-        }
-    }
-    
-    private func speakCurrentPage() {
-        guard voiceEnabled else { return }
-        
-        let page = pages[currentPage]
-        let fullText = page.title + ". " + page.description
-        SpeechManager.shared.speak(fullText)
-    }
 }
 
-// MARK: - Model
+// MARK: - Onboarding Page Model
 
 struct OnboardingPage {
     let icon: String
@@ -205,25 +273,28 @@ struct OnboardingPage {
     let features: [String]
 }
 
-// MARK: - Speech Manager
+// MARK: - Onboarding Container
 
-class SpeechManager {
+struct OnboardingContainerView: View {
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     
-    static let shared = SpeechManager()
-    private let synthesizer = AVSpeechSynthesizer()
-    
-    func speak(_ text: String) {
-        synthesizer.stopSpeaking(at: .immediate)
-        
-        let utterance = AVSpeechUtterance(string: text)
-        utterance.voice = AVSpeechSynthesisVoice(language: "ar-SA")
-        utterance.rate = 0.5
-        utterance.pitchMultiplier = 1.0
-        
-        synthesizer.speak(utterance)
+    var body: some View {
+        Group {
+            if hasCompletedOnboarding {
+                EnhancedMainView()
+            } else {
+                OnboardingView()
+            }
+        }
     }
-    
-    func stop() {
-        synthesizer.stopSpeaking(at: .immediate)
-    }
+}
+
+// MARK: - Preview
+
+#Preview("Onboarding") {
+    OnboardingView()
+}
+
+#Preview("Container") {
+    OnboardingContainerView()
 }

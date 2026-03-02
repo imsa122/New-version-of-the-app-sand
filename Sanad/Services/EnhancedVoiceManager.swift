@@ -123,30 +123,42 @@ class EnhancedVoiceManager: ObservableObject {
     /// معالجة الأمر الصوتي - Process Voice Command
     private func processCommand(_ text: String) {
         let lowercased = text.lowercased()
+        var detectedCommand: VoiceCommand? = nil
         
         // اكتشاف الأوامر
         if lowercased.contains("اتصل") || lowercased.contains("اتصال") {
             if lowercased.contains("ابن") || lowercased.contains("ولد") {
-                lastCommand = .callSon
-                NotificationCenter.default.post(name: .voiceCommandReceived, object: VoiceCommand.callSon)
+                detectedCommand = .callSon
             } else if lowercased.contains("ابنة") || lowercased.contains("بنت") {
-                lastCommand = .callDaughter
-                NotificationCenter.default.post(name: .voiceCommandReceived, object: VoiceCommand.callDaughter)
+                detectedCommand = .callDaughter
             } else {
-                lastCommand = .callFamily
-                NotificationCenter.default.post(name: .voiceCommandReceived, object: VoiceCommand.callFamily)
+                detectedCommand = .callFamily
             }
+            
         } else if lowercased.contains("موقع") || lowercased.contains("مكان") {
-            lastCommand = .sendLocation
-            NotificationCenter.default.post(name: .voiceCommandReceived, object: VoiceCommand.sendLocation)
+            detectedCommand = .sendLocation
+            
         } else if lowercased.contains("مساعدة") || lowercased.contains("ساعد") || lowercased.contains("نجدة") {
-            lastCommand = .emergency
-            NotificationCenter.default.post(name: .voiceCommandReceived, object: VoiceCommand.emergency)
+            detectedCommand = .emergency
+            
         } else if lowercased.contains("دواء") || lowercased.contains("أدوية") {
-            lastCommand = .showMedications
-            NotificationCenter.default.post(name: .voiceCommandReceived, object: VoiceCommand.showMedications)
+            detectedCommand = .showMedications
+        }
+        
+        // تنفيذ الأمر إذا تم اكتشافه
+        if let command = detectedCommand {
+            lastCommand = command
+            
+            NotificationCenter.default.post(
+                name: .voiceCommandReceived,
+                object: command
+            )
+            
+            // أهم سطر: إيقاف الاستماع بعد تنفيذ الأمر
+            stopListening()
         }
     }
+
     
     // MARK: - Text to Speech
     

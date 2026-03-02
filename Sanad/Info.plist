@@ -2,60 +2,126 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Location Permissions -->
+
+	<!-- ============================================ -->
+	<!-- Location Permissions                         -->
+	<!-- ============================================ -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>نحتاج الموقع لإرساله للعائلة في حالات الطوارئ</string>
-	
+
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>نحتاج الموقع دائماً لمراقبة السياج الجغرافي وإرسال التنبيهات عند الخروج من المنطقة المحددة</string>
-	
+
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>نحتاج الموقع دائماً لمراقبة السياج الجغرافي وحمايتك</string>
-	
-	<!-- Microphone Permission -->
+
+	<!-- ============================================ -->
+	<!-- Microphone & Speech                          -->
+	<!-- ============================================ -->
 	<key>NSMicrophoneUsageDescription</key>
 	<string>نحتاج الميكروفون للاستماع للأوامر الصوتية ومساعدتك في استخدام التطبيق</string>
-	
-	<!-- Speech Recognition Permission -->
+
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>نحتاج التعرف على الصوت لفهم أوامرك الصوتية بالعربية</string>
-	
-	<!-- Motion Permission -->
+
+	<!-- ============================================ -->
+	<!-- Motion & Health                              -->
+	<!-- ============================================ -->
 	<key>NSMotionUsageDescription</key>
 	<string>نحتاج مستشعر الحركة لاكتشاف السقوط وحمايتك في حالات الطوارئ</string>
-	
-	<!-- Contacts Permission (Optional) -->
+
+	<key>NSHealthShareUsageDescription</key>
+	<string>نحتاج الوصول لبيانات الصحة لعرض خطواتك ومعدل ضربات قلبك وساعات نومك</string>
+
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>نحتاج تحديث بيانات الصحة لتسجيل نشاطك اليومي</string>
+
+	<!-- ============================================ -->
+	<!-- Contacts                                     -->
+	<!-- ============================================ -->
 	<key>NSContactsUsageDescription</key>
 	<string>نحتاج الوصول لجهات الاتصال لتسهيل إضافة أفراد العائلة</string>
-	
-	<!-- Background Modes -->
+
+	<!-- ============================================ -->
+	<!-- Siri                                         -->
+	<!-- ============================================ -->
+	<key>NSSiriUsageDescription</key>
+	<string>نحتاج Siri لتنفيذ أوامر سريعة مثل الاتصال بالعائلة وإرسال موقعك</string>
+
+	<!-- ============================================ -->
+	<!-- Notifications                                -->
+	<!-- ============================================ -->
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>نحتاج الإشعارات لتذكيرك بأدويتك وإرسال تنبيهات الطوارئ</string>
+
+	<!-- ============================================ -->
+	<!-- Background Modes                             -->
+	<!-- ============================================ -->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
 		<string>fetch</string>
 		<string>remote-notification</string>
+		<string>audio</string>
 	</array>
-	
-	<!-- Required Device Capabilities -->
+
+	<!-- ============================================ -->
+	<!-- Required Device Capabilities                 -->
+	<!-- ✅ Fixed: arm64 replaces armv7               -->
+	<!-- ============================================ -->
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
+		<string>arm64</string>
 		<string>location-services</string>
 	</array>
-	
-	<!-- Supported Interface Orientations -->
+
+	<!-- ============================================ -->
+	<!-- Supported Interface Orientations             -->
+	<!-- Portrait only — better for elderly users     -->
+	<!-- ============================================ -->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	
-	<!-- App Transport Security -->
+
+	<!-- ============================================ -->
+	<!-- Launch Screen                                -->
+	<!-- ============================================ -->
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>AccentColor</string>
+		<key>UIImageName</key>
+		<string>sanadlogo</string>
+	</dict>
+
+	<!-- ============================================ -->
+	<!-- App Transport Security                       -->
+	<!-- ============================================ -->
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
 	</dict>
+
+	<!-- ============================================ -->
+	<!-- App Metadata                                 -->
+	<!-- ============================================ -->
+	<key>CFBundleDisplayName</key>
+	<string>سند</string>
+
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.0</string>
+
+	<key>CFBundleVersion</key>
+	<string>1</string>
+
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>whatsapp</string>
+		<string>sms</string>
+		<string>tel</string>
+	</array>
+
 </dict>
 </plist>

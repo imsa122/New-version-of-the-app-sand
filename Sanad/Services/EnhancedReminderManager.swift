@@ -22,7 +22,7 @@ class EnhancedReminderManager: ObservableObject {
     
     static func requestPermission(completion: @escaping (Bool) -> Void) {
         UNUserNotificationCenter.current()
-            .requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+            .requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
                 DispatchQueue.main.async {
                     completion(granted)
                 }
@@ -32,7 +32,6 @@ class EnhancedReminderManager: ObservableObject {
     // MARK: - Schedule Medication Reminders
     
     func scheduleMedicationReminders(for medication: Medication) {
-        
         cancelReminders(for: medication.id)
         
         for time in medication.times {
@@ -58,6 +57,8 @@ class EnhancedReminderManager: ObservableObject {
         print("✅ تم جدولة تذكيرات لـ \(medications.count) دواء")
     }
     
+    // MARK: - Schedule Reminder
+    
     private func scheduleReminder(
         id: String,
         title: String,
@@ -68,7 +69,13 @@ class EnhancedReminderManager: ObservableObject {
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
-        content.sound = .default
+        
+        // صوت منبه قوي
+        content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm.mp3"))
+        
+        // لو فعلت Critical Alerts لاحقاً استبدل السطر فوق بهذا:
+        // content.sound = UNNotificationSound.defaultCritical
+        
         content.badge = 1
         
         content.userInfo = [
@@ -92,73 +99,37 @@ class EnhancedReminderManager: ObservableObject {
             trigger: trigger
         )
         
-        UNUserNotificationCenter.current().add(request)
-        
-        // 🔔 جدولة تنبيه متابعة بعد 30 دقيقة
-        scheduleFollowUpReminder(
-            medication: medication,
-            originalTimeComponents: dateComponents
-        )
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("❌ خطأ في جدولة التذكير: \(error.localizedDescription)")
+            }
+        }
     }
     
-    // MARK: - Follow Up Reminder (30 minutes later)
-    
-    private func scheduleFollowUpReminder(
-        medication: Medication,
-        originalTimeComponents: DateComponents
-    ) {
-        guard let hour = originalTimeComponents.hour,
-              let minute = originalTimeComponents.minute else { return }
-        
-        var followUpComponents = DateComponents()
-        followUpComponents.hour = hour
-        followUpComponents.minute = minute + 30
-        
-        let content = UNMutableNotificationContent()
-        content.title = "متابعة الدواء"
-        content.body = "لم يتم تأكيد أخذ \(medication.name). هل تم تناول الجرعة؟"
-        content.sound = .default
-        
-        content.userInfo = [
-            "medicationId": medication.id.uuidString,
-            "type": "medication_followup"
-        ]
-        
-        let trigger = UNCalendarNotificationTrigger(
-            dateMatching: followUpComponents,
-            repeats: true
+    // MARK: - Cancel Follow-Up Notification
+    /// ✅ Fixed: This method was called in MedicationTrackingManager but was missing — caused crash
+    func cancelFollowUpNotification(for medicationId: UUID) {
+        let followUpId = "\(medicationId.uuidString)_followup"
+        UNUserNotificationCenter.current().removePendingNotificationRequests(
+            withIdentifiers: [followUpId]
         )
-        
-        let request = UNNotificationRequest(
-            identifier: "\(medication.id.uuidString)_followup",
-            content: content,
-            trigger: trigger
-        )
-        
-        UNUserNotificationCenter.current().add(request)
+        print("🗑️ تم إلغاء إشعار المتابعة للدواء: \(medicationId.uuidString)")
     }
-    
-    // MARK: - Cancel Reminders
-    
+
+    // MARK: - Cancel All Reminders for Medication
+
     func cancelReminders(for medicationId: UUID) {
         UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
-            
             let identifiersToRemove = requests
                 .filter { $0.identifier.starts(with: medicationId.uuidString) }
                 .map { $0.identifier }
             
-            UNUserNotificationCenter.current()
-                .removePendingNotificationRequests(withIdentifiers: identifiersToRemove)
+            UNUserNotificationCenter.current().removePendingNotificationRequests(
+                withIdentifiers: identifiersToRemove
+            )
             
             print("🗑️ تم إلغاء \(identifiersToRemove.count) تذكير")
         }
-    }
-    
-    func cancelFollowUpNotification(for medicationID: UUID) {
-        let identifier = "\(medicationID.uuidString)_followup"
-        
-        UNUserNotificationCenter.current()
-            .removePendingNotificationRequests(withIdentifiers: [identifier])
     }
     
     func cancelAllReminders() {
@@ -166,15 +137,13 @@ class EnhancedReminderManager: ObservableObject {
         print("🗑️ تم إلغاء جميع التذكيرات")
     }
     
-    // MARK: - Upcoming Reminders
+    // MARK: - Fetch
     
     func fetchUpcomingReminders() {
         UNUserNotificationCenter.current().getPendingNotificationRequests { [weak self] requests in
-            
             let reminders = requests
                 .filter { $0.content.userInfo["type"] as? String == "medication" }
                 .compactMap { request -> ScheduledReminder? in
-                    
                     guard let trigger = request.trigger as? UNCalendarNotificationTrigger,
                           let nextTriggerDate = trigger.nextTriggerDate() else {
                         return nil
@@ -208,18 +177,15 @@ class EnhancedReminderManager: ObservableObject {
         synthesizer.speak(utterance)
     }
     
-    // MARK: - Test Notification
+    // MARK: - Test
     
     func sendTestNotification() {
         let content = UNMutableNotificationContent()
         content.title = "تذكير تجريبي"
         content.body = "هذا تذكير تجريبي من تطبيق سند"
-        content.sound = .default
+        content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm.mp3"))
         
-        let trigger = UNTimeIntervalNotificationTrigger(
-            timeInterval: 5,
-            repeats: false
-        )
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
         
         let request = UNNotificationRequest(
             identifier: "test_notification",

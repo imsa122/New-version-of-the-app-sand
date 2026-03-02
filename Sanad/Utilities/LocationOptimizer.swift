@@ -179,8 +179,8 @@ class LocationOptimizer: ObservableObject {
     }
     
     private func applyLocationMode(_ mode: LocationMode) {
-        let manager = locationManager.manager
-        
+        let manager = CLLocationManager()
+
         switch mode {
         case .highAccuracy:
             manager.desiredAccuracy = mode.accuracy

@@ -3,352 +3,104 @@
 //  Sanad
 //
 //  iCloud/CloudKit sync for contacts and medications
-//  Requires iCloud + CloudKit capability in Xcode project settings
-//  Container: iCloud.com.sanad.app
+//
+//  ⚠️ IMPORTANT — To enable CloudKit, do these steps in Xcode FIRST:
+//    1. Select the "Sanad" target → Signing & Capabilities tab
+//    2. Click "+ Capability" → choose "iCloud"
+//    3. Enable the "CloudKit" checkbox
+//    4. Add container identifier: iCloud.com.sanad.app
+//  Then set `cloudKitEnabled = true` below.
+//
+//  Until those steps are done, keep `cloudKitEnabled = false`.
+//  This prevents the NSException crash caused by calling
+//  CKContainer(identifier:) without the entitlement.
 //
 
 import Foundation
-import CloudKit
 import Combine
+import UIKit
+import CloudKit
 
-/// مدير المزامنة السحابية - Cloud Sync Manager
+// ─────────────────────────────────────────────────────────────────────────────
+// MARK: - CloudSyncManager
+// ─────────────────────────────────────────────────────────────────────────────
+
 class CloudSyncManager: ObservableObject {
 
+    // ── Singleton ──────────────────────────────────────────────────────────
     static let shared = CloudSyncManager()
 
-    // MARK: - Published Properties
+    // ── Feature flag ───────────────────────────────────────────────────────
+    /// ⚠️ Keep `false` until the iCloud + CloudKit capability is added in Xcode.
+    /// When `false`, every public method is a safe no-op and CKContainer is
+    /// never instantiated, so the app will not crash.
+    private let cloudKitEnabled: Bool = false
 
-    @Published var isSyncing: Bool = false
-    @Published var lastSyncDate: Date?
-    @Published var syncError: String?
+    // ── Published state ────────────────────────────────────────────────────
+    @Published var isSyncing: Bool        = false
+    @Published var lastSyncDate: Date?    = nil
+    @Published var syncError: String?     = nil
     @Published var isCloudAvailable: Bool = false
 
-    // MARK: - CloudKit
+    // ── Lazy CloudKit objects ──────────────────────────────────────────────
+    // Optional so they are NEVER created in init().
+    // They are only instantiated inside the private `ckContainer` accessor,
+    // which is only reached when cloudKitEnabled == true.
+    private var _ckContainer: CKContainer?
+    private var _ckPrivateDB: CKDatabase?
 
-    private let container: CKContainer
-    private let privateDB: CKDatabase
-
-    // Record Types
-    private enum RecordType {
-        static let contact    = "Contact"
-        static let medication = "Medication"
-    }
-
-    // MARK: - Init
-
+    // ── Init ───────────────────────────────────────────────────────────────
     private init() {
-        container = CKContainer(identifier: "iCloud.com.sanad.app")
-        privateDB = container.privateCloudDatabase
-        // ✅ Fix: Don't call checkCloudAvailability() in init.
-        // Without the iCloud capability enabled in Xcode, container.accountStatus
-        // throws an NSException and crashes the app. Call it lazily instead.
+        // ✅ SAFE: CKContainer(identifier:) is NOT called here.
+        // Lazy creation happens in the private `ckContainer` accessor below,
+        // which is only reached when cloudKitEnabled == true.
     }
 
-    // MARK: - Availability Check
+    // ─────────────────────────────────────────────────────────────────────────
+    // MARK: - Public API  (all safe no-ops when cloudKitEnabled == false)
+    // ─────────────────────────────────────────────────────────────────────────
 
-    /// التحقق من توفر iCloud - Check iCloud availability
     func checkCloudAvailability() {
-        container.accountStatus { [weak self] status, error in
-            DispatchQueue.main.async {
-                switch status {
-                case .available:
-                    self?.isCloudAvailable = true
-                    print("✅ iCloud متوفر")
-                case .noAccount:
-                    self?.isCloudAvailable = false
-                    self?.syncError = "لا يوجد حساب iCloud. يرجى تسجيل الدخول في الإعدادات."
-                    print("❌ لا يوجد حساب iCloud")
-                case .restricted:
-                    self?.isCloudAvailable = false
-                    self?.syncError = "iCloud مقيد على هذا الجهاز."
-                    print("❌ iCloud مقيد")
-                case .couldNotDetermine:
-                    self?.isCloudAvailable = false
-                    print("⚠️ لا يمكن تحديد حالة iCloud")
-                case .temporarilyUnavailable:
-                    self?.isCloudAvailable = false
-                    self?.syncError = "iCloud غير متوفر مؤقتاً."
-                    print("⚠️ iCloud غير متوفر مؤقتاً")
-                @unknown default:
-                    self?.isCloudAvailable = false
-                }
-            }
+        guard cloudKitEnabled else {
+            isCloudAvailable = false
+            syncError = "مزامنة iCloud غير مفعّلة. يرجى تفعيل CloudKit في Xcode أولاً."
+            return
         }
+        performCheckCloudAvailability()
     }
 
-    // MARK: - Full Sync
-
-    /// مزامنة كاملة - Full sync (upload local → cloud, download cloud → local)
     func syncAll(completion: ((Bool) -> Void)? = nil) {
-        guard isCloudAvailable else {
-            print("⚠️ iCloud غير متوفر — تخطي المزامنة")
-            completion?(false)
-            return
-        }
-
-        isSyncing = true
-        syncError = nil
-
-        let group = DispatchGroup()
-
-        group.enter()
-        uploadContacts { group.leave() }
-
-        group.enter()
-        uploadMedications { group.leave() }
-
-        group.notify(queue: .main) { [weak self] in
-            self?.isSyncing = false
-            self?.lastSyncDate = Date()
-            print("✅ اكتملت المزامنة")
-            completion?(true)
-        }
+        guard cloudKitEnabled, isCloudAvailable else { completion?(false); return }
+        performSyncAll(completion: completion)
     }
 
-    // MARK: - Upload Contacts
-
-    /// رفع جهات الاتصال - Upload contacts to CloudKit
     func uploadContacts(completion: @escaping () -> Void) {
-        let contacts = StorageManager.shared.loadContacts()
-
-        guard !contacts.isEmpty else {
-            completion()
-            return
-        }
-
-        var records: [CKRecord] = []
-
-        for contact in contacts {
-            let recordID = CKRecord.ID(recordName: contact.id.uuidString)
-            let record = CKRecord(recordType: RecordType.contact, recordID: recordID)
-            record["name"]               = contact.name as CKRecordValue
-            record["phoneNumber"]        = contact.phoneNumber as CKRecordValue
-            record["relationship"]       = contact.relationship as CKRecordValue
-            record["isEmergencyContact"] = (contact.isEmergencyContact ? 1 : 0) as CKRecordValue
-            record["isFavorite"]         = (contact.isFavorite ? 1 : 0) as CKRecordValue
-            records.append(record)
-        }
-
-        let operation = CKModifyRecordsOperation(recordsToSave: records, recordIDsToDelete: nil)
-        operation.savePolicy = .changedKeys
-        operation.modifyRecordsResultBlock = { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success:
-                    print("✅ تم رفع \(records.count) جهة اتصال إلى iCloud")
-                case .failure(let error):
-                    print("❌ خطأ في رفع جهات الاتصال: \(error.localizedDescription)")
-                }
-                completion()
-            }
-        }
-
-        privateDB.add(operation)
+        guard cloudKitEnabled, isCloudAvailable else { completion(); return }
+        performUploadContacts(completion: completion)
     }
 
-    // MARK: - Upload Medications
-
-    /// رفع الأدوية - Upload medications to CloudKit
     func uploadMedications(completion: @escaping () -> Void) {
-        let medications = StorageManager.shared.loadMedications()
-
-        guard !medications.isEmpty else {
-            completion()
-            return
-        }
-
-        var records: [CKRecord] = []
-
-        for medication in medications {
-            let recordID = CKRecord.ID(recordName: medication.id.uuidString)
-            let record = CKRecord(recordType: RecordType.medication, recordID: recordID)
-            record["name"]      = medication.name as CKRecordValue
-            record["dosage"]    = medication.dosage as CKRecordValue
-            record["isActive"]  = (medication.isActive ? 1 : 0) as CKRecordValue
-            record["notes"]     = (medication.notes ?? "") as CKRecordValue
-            record["startDate"] = medication.startDate as CKRecordValue
-
-            // Encode times as JSON string
-            if let timesData = try? JSONEncoder().encode(medication.times),
-               let timesString = String(data: timesData, encoding: .utf8) {
-                record["timesJSON"] = timesString as CKRecordValue
-            }
-
-            records.append(record)
-        }
-
-        let operation = CKModifyRecordsOperation(recordsToSave: records, recordIDsToDelete: nil)
-        operation.savePolicy = .changedKeys
-        operation.modifyRecordsResultBlock = { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success:
-                    print("✅ تم رفع \(records.count) دواء إلى iCloud")
-                case .failure(let error):
-                    print("❌ خطأ في رفع الأدوية: \(error.localizedDescription)")
-                }
-                completion()
-            }
-        }
-
-        privateDB.add(operation)
+        guard cloudKitEnabled, isCloudAvailable else { completion(); return }
+        performUploadMedications(completion: completion)
     }
 
-    // MARK: - Download Contacts
-
-    /// تنزيل جهات الاتصال - Download contacts from CloudKit
     func downloadContacts(completion: @escaping ([Contact]) -> Void) {
-        let query = CKQuery(
-            recordType: RecordType.contact,
-            predicate: NSPredicate(value: true)
-        )
-
-        privateDB.fetch(withQuery: query, inZoneWith: nil) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let (matchResults, _)):
-                    var contacts: [Contact] = []
-                    for (_, recordResult) in matchResults {
-                        if case .success(let record) = recordResult {
-                            if let contact = self.contactFromRecord(record) {
-                                contacts.append(contact)
-                            }
-                        }
-                    }
-                    print("✅ تم تنزيل \(contacts.count) جهة اتصال من iCloud")
-                    completion(contacts)
-
-                case .failure(let error):
-                    print("❌ خطأ في تنزيل جهات الاتصال: \(error.localizedDescription)")
-                    completion([])
-                }
-            }
-        }
+        guard cloudKitEnabled, isCloudAvailable else { completion([]); return }
+        performDownloadContacts(completion: completion)
     }
 
-    // MARK: - Download Medications
-
-    /// تنزيل الأدوية - Download medications from CloudKit
     func downloadMedications(completion: @escaping ([Medication]) -> Void) {
-        let query = CKQuery(
-            recordType: RecordType.medication,
-            predicate: NSPredicate(value: true)
-        )
-
-        privateDB.fetch(withQuery: query, inZoneWith: nil) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let (matchResults, _)):
-                    var medications: [Medication] = []
-                    for (_, recordResult) in matchResults {
-                        if case .success(let record) = recordResult {
-                            if let medication = self.medicationFromRecord(record) {
-                                medications.append(medication)
-                            }
-                        }
-                    }
-                    print("✅ تم تنزيل \(medications.count) دواء من iCloud")
-                    completion(medications)
-
-                case .failure(let error):
-                    print("❌ خطأ في تنزيل الأدوية: \(error.localizedDescription)")
-                    completion([])
-                }
-            }
-        }
+        guard cloudKitEnabled, isCloudAvailable else { completion([]); return }
+        performDownloadMedications(completion: completion)
     }
 
-    // MARK: - Restore from Cloud
-
-    /// استعادة البيانات من السحابة - Restore data from cloud (overwrites local)
     func restoreFromCloud(completion: @escaping (Bool) -> Void) {
-        guard isCloudAvailable else {
-            completion(false)
-            return
-        }
-
-        isSyncing = true
-        let group = DispatchGroup()
-
-        group.enter()
-        downloadContacts { contacts in
-            if !contacts.isEmpty {
-                StorageManager.shared.saveContacts(contacts)
-            }
-            group.leave()
-        }
-
-        group.enter()
-        downloadMedications { medications in
-            if !medications.isEmpty {
-                StorageManager.shared.saveMedications(medications)
-            }
-            group.leave()
-        }
-
-        group.notify(queue: .main) { [weak self] in
-            self?.isSyncing = false
-            self?.lastSyncDate = Date()
-            completion(true)
-        }
+        guard cloudKitEnabled, isCloudAvailable else { completion(false); return }
+        performRestoreFromCloud(completion: completion)
     }
 
-    // MARK: - Record Converters
-
-    private func contactFromRecord(_ record: CKRecord) -> Contact? {
-        guard
-            let name         = record["name"] as? String,
-            let phoneNumber  = record["phoneNumber"] as? String,
-            let relationship = record["relationship"] as? String
-        else { return nil }
-
-        let isEmergency = (record["isEmergencyContact"] as? Int ?? 0) == 1
-        let isFavorite  = (record["isFavorite"] as? Int ?? 0) == 1
-        let id          = UUID(uuidString: record.recordID.recordName) ?? UUID()
-
-        return Contact(
-            id: id,
-            name: name,
-            phoneNumber: phoneNumber,
-            relationship: relationship,
-            isEmergencyContact: isEmergency,
-            isFavorite: isFavorite
-        )
-    }
-
-    private func medicationFromRecord(_ record: CKRecord) -> Medication? {
-        guard
-            let name    = record["name"] as? String,
-            let dosage  = record["dosage"] as? String
-        else { return nil }
-
-        let isActive  = (record["isActive"] as? Int ?? 1) == 1
-        let notes     = record["notes"] as? String
-        let startDate = record["startDate"] as? Date ?? Date()
-        let id        = UUID(uuidString: record.recordID.recordName) ?? UUID()
-
-        var times: [MedicationTime] = []
-        if let timesJSON = record["timesJSON"] as? String,
-           let data = timesJSON.data(using: .utf8),
-           let decoded = try? JSONDecoder().decode([MedicationTime].self, from: data) {
-            times = decoded
-        }
-
-        return Medication(
-            id: id,
-            name: name,
-            dosage: dosage,
-            times: times,
-            notes: notes?.isEmpty == true ? nil : notes,
-            isActive: isActive,
-            startDate: startDate
-        )
-    }
-
-    // MARK: - Auto Sync on Foreground
-
-    /// إعداد المزامنة التلقائية - Setup auto sync when app comes to foreground
     func setupAutoSync() {
+        guard cloudKitEnabled else { return }
         NotificationCenter.default.addObserver(
             forName: UIApplication.willEnterForegroundNotification,
             object: nil,
@@ -359,5 +111,248 @@ class CloudSyncManager: ObservableObject {
     }
 }
 
-// MARK: - UIApplication import
-import UIKit
+// ─────────────────────────────────────────────────────────────────────────────
+// MARK: - CloudKit Implementation  (private — only executed when flag is true)
+// ─────────────────────────────────────────────────────────────────────────────
+
+private extension CloudSyncManager {
+
+    // ── Lazy container accessor ────────────────────────────────────────────
+    // ⚠️ CKContainer(identifier:) is called ONLY here.
+    // This accessor is ONLY reached from the perform* methods.
+    // The perform* methods are ONLY called when cloudKitEnabled == true.
+    // Therefore, when cloudKitEnabled == false, this code is unreachable
+    // and the app will never crash.
+    var ckContainer: CKContainer {
+        if let existing = _ckContainer { return existing }
+        let c = CKContainer(identifier: "iCloud.com.sanad.app")
+        _ckContainer = c
+        _ckPrivateDB = c.privateCloudDatabase
+        return c
+    }
+
+    var ckPrivateDB: CKDatabase {
+        if let db = _ckPrivateDB { return db }
+        return ckContainer.privateCloudDatabase
+    }
+
+    // ── Record type constants ──────────────────────────────────────────────
+    enum RecordType {
+        static let contact    = "Contact"
+        static let medication = "Medication"
+    }
+
+    // ── Availability check ─────────────────────────────────────────────────
+    func performCheckCloudAvailability() {
+        ckContainer.accountStatus { [weak self] status, _ in
+            DispatchQueue.main.async {
+                switch status {
+                case .available:
+                    self?.isCloudAvailable = true
+                    self?.syncError = nil
+                    print("✅ iCloud متوفر")
+                case .noAccount:
+                    self?.isCloudAvailable = false
+                    self?.syncError = "لا يوجد حساب iCloud. يرجى تسجيل الدخول في الإعدادات."
+                case .restricted:
+                    self?.isCloudAvailable = false
+                    self?.syncError = "iCloud مقيد على هذا الجهاز."
+                case .couldNotDetermine:
+                    self?.isCloudAvailable = false
+                    self?.syncError = "تعذّر تحديد حالة iCloud."
+                case .temporarilyUnavailable:
+                    self?.isCloudAvailable = false
+                    self?.syncError = "iCloud غير متوفر مؤقتاً."
+                @unknown default:
+                    self?.isCloudAvailable = false
+                }
+            }
+        }
+    }
+
+    // ── Full sync ──────────────────────────────────────────────────────────
+    func performSyncAll(completion: ((Bool) -> Void)?) {
+        isSyncing = true
+        syncError = nil
+
+        let group = DispatchGroup()
+        group.enter(); performUploadContacts    { group.leave() }
+        group.enter(); performUploadMedications { group.leave() }
+
+        group.notify(queue: .main) { [weak self] in
+            self?.isSyncing    = false
+            self?.lastSyncDate = Date()
+            print("✅ اكتملت المزامنة")
+            completion?(true)
+        }
+    }
+
+    // ── Upload contacts ────────────────────────────────────────────────────
+    func performUploadContacts(completion: @escaping () -> Void) {
+        let contacts = StorageManager.shared.loadContacts()
+        guard !contacts.isEmpty else { completion(); return }
+
+        let records: [CKRecord] = contacts.map { contact in
+            let record = CKRecord(
+                recordType: RecordType.contact,
+                recordID:   CKRecord.ID(recordName: contact.id.uuidString)
+            )
+            record["name"]               = contact.name               as CKRecordValue
+            record["phoneNumber"]        = contact.phoneNumber        as CKRecordValue
+            record["relationship"]       = contact.relationship       as CKRecordValue
+            record["isEmergencyContact"] = (contact.isEmergencyContact ? 1 : 0) as CKRecordValue
+            record["isFavorite"]         = (contact.isFavorite         ? 1 : 0) as CKRecordValue
+            return record
+        }
+
+        let op = CKModifyRecordsOperation(recordsToSave: records, recordIDsToDelete: nil)
+        op.savePolicy = .changedKeys
+        op.modifyRecordsResultBlock = { result in
+            DispatchQueue.main.async {
+                if case .failure(let e) = result {
+                    print("❌ خطأ رفع جهات الاتصال: \(e.localizedDescription)")
+                }
+                completion()
+            }
+        }
+        ckPrivateDB.add(op)
+    }
+
+    // ── Upload medications ─────────────────────────────────────────────────
+    func performUploadMedications(completion: @escaping () -> Void) {
+        let medications = StorageManager.shared.loadMedications()
+        guard !medications.isEmpty else { completion(); return }
+
+        let records: [CKRecord] = medications.map { med in
+            let record = CKRecord(
+                recordType: RecordType.medication,
+                recordID:   CKRecord.ID(recordName: med.id.uuidString)
+            )
+            record["name"]      = med.name                as CKRecordValue
+            record["dosage"]    = med.dosage              as CKRecordValue
+            record["isActive"]  = (med.isActive ? 1 : 0) as CKRecordValue
+            record["notes"]     = (med.notes ?? "")       as CKRecordValue
+            record["startDate"] = med.startDate           as CKRecordValue
+            if let data   = try? JSONEncoder().encode(med.times),
+               let string = String(data: data, encoding: .utf8) {
+                record["timesJSON"] = string as CKRecordValue
+            }
+            return record
+        }
+
+        let op = CKModifyRecordsOperation(recordsToSave: records, recordIDsToDelete: nil)
+        op.savePolicy = .changedKeys
+        op.modifyRecordsResultBlock = { result in
+            DispatchQueue.main.async {
+                if case .failure(let e) = result {
+                    print("❌ خطأ رفع الأدوية: \(e.localizedDescription)")
+                }
+                completion()
+            }
+        }
+        ckPrivateDB.add(op)
+    }
+
+    // ── Download contacts ──────────────────────────────────────────────────
+    func performDownloadContacts(completion: @escaping ([Contact]) -> Void) {
+        let query = CKQuery(recordType: RecordType.contact,
+                            predicate: NSPredicate(value: true))
+        ckPrivateDB.fetch(withQuery: query, inZoneWith: nil) { [weak self] result in
+            DispatchQueue.main.async {
+                guard case .success(let (matchResults, _)) = result else {
+                    completion([]); return
+                }
+                let contacts: [Contact] = matchResults.compactMap { (_, recordResult) in
+                    guard case .success(let record) = recordResult else { return nil }
+                    return self?.contactFromRecord(record)
+                }
+                completion(contacts)
+            }
+        }
+    }
+
+    // ── Download medications ───────────────────────────────────────────────
+    func performDownloadMedications(completion: @escaping ([Medication]) -> Void) {
+        let query = CKQuery(recordType: RecordType.medication,
+                            predicate: NSPredicate(value: true))
+        ckPrivateDB.fetch(withQuery: query, inZoneWith: nil) { [weak self] result in
+            DispatchQueue.main.async {
+                guard case .success(let (matchResults, _)) = result else {
+                    completion([]); return
+                }
+                let medications: [Medication] = matchResults.compactMap { (_, recordResult) in
+                    guard case .success(let record) = recordResult else { return nil }
+                    return self?.medicationFromRecord(record)
+                }
+                completion(medications)
+            }
+        }
+    }
+
+    // ── Restore from cloud ─────────────────────────────────────────────────
+    func performRestoreFromCloud(completion: @escaping (Bool) -> Void) {
+        isSyncing = true
+        let group = DispatchGroup()
+
+        group.enter()
+        performDownloadContacts { contacts in
+            if !contacts.isEmpty { StorageManager.shared.saveContacts(contacts) }
+            group.leave()
+        }
+
+        group.enter()
+        performDownloadMedications { medications in
+            if !medications.isEmpty { StorageManager.shared.saveMedications(medications) }
+            group.leave()
+        }
+
+        group.notify(queue: .main) { [weak self] in
+            self?.isSyncing    = false
+            self?.lastSyncDate = Date()
+            completion(true)
+        }
+    }
+
+    // ── Record → Model converters ──────────────────────────────────────────
+    func contactFromRecord(_ record: CKRecord) -> Contact? {
+        guard
+            let name         = record["name"]         as? String,
+            let phoneNumber  = record["phoneNumber"]  as? String,
+            let relationship = record["relationship"] as? String
+        else { return nil }
+
+        return Contact(
+            id:                 UUID(uuidString: record.recordID.recordName) ?? UUID(),
+            name:               name,
+            phoneNumber:        phoneNumber,
+            relationship:       relationship,
+            isEmergencyContact: (record["isEmergencyContact"] as? Int ?? 0) == 1,
+            isFavorite:         (record["isFavorite"]         as? Int ?? 0) == 1
+        )
+    }
+
+    func medicationFromRecord(_ record: CKRecord) -> Medication? {
+        guard
+            let name   = record["name"]   as? String,
+            let dosage = record["dosage"] as? String
+        else { return nil }
+
+        var times: [MedicationTime] = []
+        if let json    = record["timesJSON"] as? String,
+           let data    = json.data(using: .utf8),
+           let decoded = try? JSONDecoder().decode([MedicationTime].self, from: data) {
+            times = decoded
+        }
+
+        let notes = record["notes"] as? String
+        return Medication(
+            id:        UUID(uuidString: record.recordID.recordName) ?? UUID(),
+            name:      name,
+            dosage:    dosage,
+            times:     times,
+            notes:     notes?.isEmpty == true ? nil : notes,
+            isActive:  (record["isActive"] as? Int ?? 1) == 1,
+            startDate: record["startDate"] as? Date ?? Date()
+        )
+    }
+}

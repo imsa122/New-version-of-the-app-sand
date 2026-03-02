@@ -54,11 +54,11 @@ struct ActivityLogView: View {
     
     private var statisticsCards: some View {
         let stats = ActivityLogger.shared.getStatistics()
-        
+
         return HStack(spacing: 15) {
-            StatCard(title: "حرج", count: stats.criticalCount, color: .red)
-            StatCard(title: "تفويت", count: stats.medicationMissedCount, color: .orange)
-            StatCard(title: "تم تناول", count: stats.medicationTakenCount, color: .green)
+            ActivityStatCard(title: "حرج", count: stats.criticalCount, color: .red)
+            ActivityStatCard(title: "تفويت", count: stats.medicationMissedCount, color: .orange)
+            ActivityStatCard(title: "تم تناول", count: stats.medicationTakenCount, color: .green)
         }
         .padding()
     }
@@ -116,19 +116,19 @@ struct ActivityLogRow: View {
     }
 }
 
-// MARK: - Stat Card
+// MARK: - Activity Stat Card (renamed to avoid conflict with MedicationListView's StatCard)
 
-struct StatCard: View {
+struct ActivityStatCard: View {
     let title: String
     let count: Int
     let color: Color
-    
+
     var body: some View {
-        VStack {
+        VStack(spacing: 4) {
             Text("\(count)")
                 .font(.system(size: 28, weight: .bold))
                 .foregroundColor(.white)
-            
+
             Text(title)
                 .font(.caption)
                 .foregroundColor(.white)

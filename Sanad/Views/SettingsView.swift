@@ -11,7 +11,8 @@ import SwiftUI
 struct SettingsView: View {
 
     @StateObject private var viewModel = SettingsViewModel()
-    @StateObject private var cloudSync = CloudSyncManager.shared
+    // ✅ Fix: Use @ObservedObject (not @StateObject) for singletons
+    @ObservedObject private var cloudSync = CloudSyncManager.shared
     @Environment(\.dismiss) private var dismiss
     @AppStorage("preferredColorScheme") private var preferredColorScheme: String = "system"
 

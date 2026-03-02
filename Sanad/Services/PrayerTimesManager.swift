@@ -22,7 +22,8 @@ class PrayerTimesManager: ObservableObject {
     @Published var prayerTimes: [Prayer] = []
     @Published var nextPrayer: Prayer?
     @Published var timeUntilNextPrayer: String = ""
-    @Published var qiblaDirection: Double = 0.0 // degrees from North
+    @Published var qiblaDirection: Double = 0.0  // Qibla bearing from North (degrees)
+    @Published var deviceHeading: Double = 0.0   // ✅ Fix: Live compass heading from device
     @Published var currentLocation: CLLocation?
 
     // MARK: - Private
@@ -45,6 +46,7 @@ class PrayerTimesManager: ObservableObject {
     // MARK: - Location Observer
 
     private func setupLocationObserver() {
+        // Observe location changes → recalculate prayer times + Qibla
         locationManager.$location
             .compactMap { $0 }
             .removeDuplicates { loc1, loc2 in
@@ -57,6 +59,17 @@ class PrayerTimesManager: ObservableObject {
                 self?.calculateQiblaDirection(from: location)
             }
             .store(in: &cancellables)
+
+        // ✅ Fix: Observe compass heading → update deviceHeading for live Qibla compass
+        locationManager.$compassHeading
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] heading in
+                self?.deviceHeading = heading
+            }
+            .store(in: &cancellables)
+
+        // ✅ Fix: Start heading updates so the compass rotates with the device
+        locationManager.startUpdatingHeading()
     }
 
     // MARK: - Prayer Times Calculation

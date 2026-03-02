@@ -37,9 +37,23 @@ struct MedicationListView: View {
             
             // قسم التذكيرات القادمة - Upcoming Reminders
             if !viewModel.upcomingReminders.isEmpty {
-                Section("التذكيرات القادمة") {
-                    ForEach(viewModel.upcomingReminders.prefix(3)) { reminder in
+                Section {
+                    // ✅ Fix: Show ALL reminders (not just prefix(3)) with swipe-to-delete
+                    ForEach(viewModel.upcomingReminders) { reminder in
                         UpcomingReminderRow(reminder: reminder)
+                    }
+                    .onDelete { indexSet in
+                        indexSet.forEach { index in
+                            viewModel.deleteReminder(viewModel.upcomingReminders[index])
+                        }
+                    }
+                } header: {
+                    HStack {
+                        Text("التذكيرات القادمة")
+                        Spacer()
+                        Text("اسحب للحذف")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
                     }
                 }
             }

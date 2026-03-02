@@ -72,6 +72,14 @@ class MedicationViewModel: ObservableObject {
         fetchUpcomingReminders()
     }
     
+    // MARK: - ✅ Fix: Delete Single Upcoming Reminder
+
+    /// حذف تذكير واحد من قائمة التذكيرات القادمة - Delete a single upcoming reminder
+    func deleteReminder(_ reminder: ScheduledReminder) {
+        reminderManager.cancelReminder(withIdentifier: reminder.id)
+        // upcomingReminders will auto-refresh via cancelReminder's asyncAfter call
+    }
+
     // MARK: - Delete Medication
     
     /// حذف دواء - Delete Medication

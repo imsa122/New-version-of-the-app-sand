@@ -19,6 +19,8 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var location: CLLocation?
     @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
     @Published var isOutsideGeofence: Bool = false
+    /// ✅ Fix: Compass heading for Qibla direction
+    @Published var compassHeading: Double = 0.0
 
     /// هل المستخدم داخل منطقة المنزل - Is user inside home area
     var isInsideHomeArea: Bool {
@@ -46,6 +48,21 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     /// بدء تحديث الموقع - Start Updating Location
     func startUpdatingLocation() {
         manager.startUpdatingLocation()
+    }
+
+    /// ✅ Fix: بدء تحديث الاتجاه - Start Updating Heading (for Qibla compass)
+    func startUpdatingHeading() {
+        guard CLLocationManager.headingAvailable() else {
+            print("⚠️ Compass heading not available on this device")
+            return
+        }
+        manager.headingFilter = 1.0 // Update every 1° change
+        manager.startUpdatingHeading()
+    }
+
+    /// إيقاف تحديث الاتجاه - Stop Updating Heading
+    func stopUpdatingHeading() {
+        manager.stopUpdatingHeading()
     }
     
     /// إيقاف تحديث الموقع - Stop Updating Location
@@ -119,6 +136,14 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         location = locations.last
+    }
+
+    /// ✅ Fix: Compass heading delegate — updates compassHeading for Qibla
+    func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
+        guard newHeading.headingAccuracy >= 0 else { return } // Negative = invalid
+        DispatchQueue.main.async {
+            self.compassHeading = newHeading.magneticHeading
+        }
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {

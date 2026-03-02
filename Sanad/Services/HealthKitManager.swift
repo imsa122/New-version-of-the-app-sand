@@ -42,10 +42,21 @@ class HealthKitManager: ObservableObject {
         return types
     }()
 
+    // ✅ Fix: UserDefaults key to persist authorization state across launches
+    private let authRequestedKey = "healthKitAuthRequested"
+
     // MARK: - Init
 
     private init() {
         isAvailable = HKHealthStore.isHealthDataAvailable()
+
+        // ✅ Fix: If we've previously requested authorization, restore isAuthorized = true
+        // HealthKit doesn't expose read authorization status directly (privacy),
+        // so we track whether the user went through the permission dialog.
+        if isAvailable && UserDefaults.standard.bool(forKey: authRequestedKey) {
+            isAuthorized = true
+            fetchAllHealthData()
+        }
     }
 
     // MARK: - Authorization
@@ -65,14 +76,15 @@ class HealthKitManager: ObservableObject {
                     completion(false)
                     return
                 }
-                self?.isAuthorized = granted
-                if granted {
-                    print("✅ تم منح إذن HealthKit")
-                    self?.fetchAllHealthData()
-                } else {
-                    print("❌ تم رفض إذن HealthKit")
-                }
-                completion(granted)
+
+                // ✅ Fix: Persist that we've requested authorization
+                // Show health data even if some types were denied (HealthKit privacy model)
+                UserDefaults.standard.set(true, forKey: self?.authRequestedKey ?? "healthKitAuthRequested")
+                self?.isAuthorized = true
+
+                print(granted ? "✅ تم منح إذن HealthKit" : "⚠️ بعض أذونات HealthKit مرفوضة — سيتم عرض البيانات المتاحة")
+                self?.fetchAllHealthData()
+                completion(true)
             }
         }
     }

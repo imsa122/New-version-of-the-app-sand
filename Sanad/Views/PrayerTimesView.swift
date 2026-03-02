@@ -159,13 +159,37 @@ struct PrayerTimesView: View {
                 Text("اتجاه القبلة")
                     .font(.system(size: 20, weight: .bold))
                 Spacer()
-                Text("\(Int(manager.qiblaDirection))°")
-                    .font(.headline)
-                    .foregroundColor(.indigo)
+                if manager.currentLocation != nil {
+                    Text("\(Int(manager.qiblaDirection))°")
+                        .font(.headline)
+                        .foregroundColor(.indigo)
+                } else {
+                    Text("الموقع غير متوفر")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
 
-            QiblaCompassView(direction: manager.qiblaDirection)
-                .frame(height: 200)
+            if manager.currentLocation != nil {
+                // ✅ Fix: Pass both qiblaDirection and deviceHeading for live compass
+                QiblaCompassView(
+                    direction: manager.qiblaDirection,
+                    deviceHeading: manager.deviceHeading
+                )
+                .frame(height: 220)
+            } else {
+                // Show placeholder when location is not available
+                VStack(spacing: 12) {
+                    Image(systemName: "location.slash.fill")
+                        .font(.system(size: 44))
+                        .foregroundColor(.secondary)
+                    Text("يرجى تفعيل خدمة الموقع لعرض اتجاه القبلة")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(height: 120)
+            }
         }
         .padding(20)
         .background(Color(.secondarySystemBackground))
@@ -267,15 +291,21 @@ struct PrayerTimeRow: View {
 
 struct QiblaCompassView: View {
 
-    let direction: Double
-    @State private var compassRotation: Double = 0
+    let direction: Double      // Qibla bearing from North (degrees)
+    let deviceHeading: Double  // ✅ Fix: Live device compass heading (degrees)
+
+    /// ✅ Fix: Needle rotation = qiblaDirection - deviceHeading
+    /// This makes the needle always point toward Qibla regardless of device orientation
+    private var needleRotation: Double {
+        (direction - deviceHeading + 360).truncatingRemainder(dividingBy: 360)
+    }
 
     var body: some View {
         ZStack {
             // Compass background
             Circle()
                 .fill(Color(.systemBackground))
-                .shadow(color: .black.opacity(0.1), radius: 10)
+                .shadow(color: .black.opacity(0.12), radius: 12)
 
             // Compass ring
             Circle()
@@ -289,7 +319,8 @@ struct QiblaCompassView: View {
                 )
                 .padding(8)
 
-            // Cardinal directions
+            // ✅ Fix: Cardinal directions rotate OPPOSITE to device heading
+            // so they stay fixed relative to the real world
             ForEach(["ش", "ق", "ج", "غ"], id: \.self) { dir in
                 let index = ["ش", "ق", "ج", "غ"].firstIndex(of: dir)!
                 let angle = Double(index) * 90.0
@@ -297,12 +328,14 @@ struct QiblaCompassView: View {
                     .font(.system(size: 14, weight: .bold))
                     .foregroundColor(.secondary)
                     .offset(
-                        x: sin(angle * .pi / 180) * 75,
-                        y: -cos(angle * .pi / 180) * 75
+                        x: sin(angle * .pi / 180) * 80,
+                        y: -cos(angle * .pi / 180) * 80
                     )
             }
+            .rotationEffect(.degrees(-deviceHeading))
+            .animation(.easeInOut(duration: 0.3), value: deviceHeading)
 
-            // Qibla needle
+            // Qibla needle — always points toward Qibla
             VStack(spacing: 0) {
                 // Kaaba icon at tip
                 Image(systemName: "building.columns.fill")
@@ -320,27 +353,34 @@ struct QiblaCompassView: View {
                             endPoint: .bottom
                         )
                     )
-                    .frame(width: 4, height: 60)
+                    .frame(width: 4, height: 65)
 
                 Circle()
                     .fill(Color.indigo.opacity(0.3))
                     .frame(width: 10, height: 10)
             }
-            .rotationEffect(.degrees(direction))
-            .animation(.easeInOut(duration: 0.8), value: direction)
+            .rotationEffect(.degrees(needleRotation))
+            .animation(.easeInOut(duration: 0.3), value: needleRotation)
 
             // Center dot
             Circle()
                 .fill(Color.indigo)
                 .frame(width: 12, height: 12)
 
-            // Direction label
+            // Direction label + accuracy hint
             VStack {
                 Spacer()
-                Text("اتجاه الكعبة المشرفة")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .padding(.bottom, 12)
+                VStack(spacing: 2) {
+                    Text("اتجاه الكعبة المشرفة")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    if deviceHeading == 0 {
+                        Text("وجّه الجهاز نحو الشمال للمعايرة")
+                            .font(.caption2)
+                            .foregroundColor(.orange)
+                    }
+                }
+                .padding(.bottom, 12)
             }
         }
     }

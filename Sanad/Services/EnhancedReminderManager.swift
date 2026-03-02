@@ -132,8 +132,24 @@ class EnhancedReminderManager: ObservableObject {
         }
     }
     
+    // MARK: - ✅ Fix: Cancel Single Reminder by Identifier
+
+    /// إلغاء تذكير واحد بمعرّفه - Cancel a single reminder by its notification identifier
+    func cancelReminder(withIdentifier identifier: String) {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(
+            withIdentifiers: [identifier]
+        )
+        print("🗑️ تم إلغاء التذكير: \(identifier)")
+
+        // Refresh the list after deletion
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            self?.fetchUpcomingReminders()
+        }
+    }
+
     func cancelAllReminders() {
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+        upcomingReminders = []
         print("🗑️ تم إلغاء جميع التذكيرات")
     }
     

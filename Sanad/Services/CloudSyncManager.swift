@@ -39,7 +39,9 @@ class CloudSyncManager: ObservableObject {
     private init() {
         container = CKContainer(identifier: "iCloud.com.sanad.app")
         privateDB = container.privateCloudDatabase
-        checkCloudAvailability()
+        // ✅ Fix: Don't call checkCloudAvailability() in init.
+        // Without the iCloud capability enabled in Xcode, container.accountStatus
+        // throws an NSException and crashes the app. Call it lazily instead.
     }
 
     // MARK: - Availability Check

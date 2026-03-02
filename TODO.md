@@ -137,6 +137,28 @@ These steps must be done manually in Xcode (cannot be done via code files):
 
 ---
 
+## 🐛 Track 6: Runtime Bug Fixes — Session 3 (COMPLETE)
+
+### Fix 1: Settings Crash ✅
+- [x] `CloudSyncManager.swift` — Removed `checkCloudAvailability()` from `init()` (crashed without iCloud capability in Xcode)
+- [x] `SettingsView.swift` — Changed `@StateObject` → `@ObservedObject` for singleton `CloudSyncManager.shared`
+
+### Fix 2: Qibla Direction Not Working ✅
+- [x] `LocationManager.swift` — Added `@Published var compassHeading: Double`, `startUpdatingHeading()`, `stopUpdatingHeading()`, `didUpdateHeading` delegate method
+- [x] `PrayerTimesManager.swift` — Added `@Published var deviceHeading: Double`, subscribed to `locationManager.$compassHeading`, calls `startUpdatingHeading()` in `setupLocationObserver()`
+- [x] `PrayerTimesView.swift` — `QiblaCompassView` now takes `direction` + `deviceHeading`; needle rotates by `qiblaDirection - deviceHeading`; cardinal directions counter-rotate with device; "no location" placeholder shown when location unavailable
+
+### Fix 3: HealthKit Permission Not Persisting ✅
+- [x] `HealthKitManager.swift` — Added `authRequestedKey` UserDefaults flag; `init()` restores `isAuthorized = true` if previously requested; `requestAuthorization` persists flag and always sets `isAuthorized = true`
+- [x] `HealthDashboardView.swift` — `onAppear` auto-requests authorization if not yet done (no longer requires manual button tap)
+
+### Fix 4: Can't Delete Upcoming Reminders ✅
+- [x] `EnhancedReminderManager.swift` — Added `cancelReminder(withIdentifier:)` + auto-refresh of `upcomingReminders`; `cancelAllReminders()` now also clears `upcomingReminders` array
+- [x] `MedicationViewModel.swift` — Added `deleteReminder(_ reminder: ScheduledReminder)` method
+- [x] `MedicationListView.swift` — Added `.onDelete` on reminders `ForEach`; shows ALL reminders (not just `prefix(3)`); added "اسحب للحذف" hint in section header
+
+---
+
 ## 🐛 Track 5: Build Error Fixes (COMPLETE)
 
 - [x] **Fix 1** — `Sanad/Services/MedicationTrackingManager.swift`

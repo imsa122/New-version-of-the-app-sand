@@ -51,8 +51,15 @@ struct HealthDashboardView: View {
             }
         }
         .onAppear {
-            if healthKit.isAuthorized {
-                healthKit.fetchAllHealthData()
+            if healthKit.isAvailable {
+                if healthKit.isAuthorized {
+                    // Already authorized — just refresh data
+                    healthKit.fetchAllHealthData()
+                } else {
+                    // ✅ Fix: Auto-request authorization when Health Dashboard opens
+                    // iOS will only show the permission dialog once; subsequent calls are no-ops
+                    healthKit.requestAuthorization { _ in }
+                }
             }
         }
     }

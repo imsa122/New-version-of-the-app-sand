@@ -76,7 +76,7 @@ class PrayerTimesManager: ObservableObject {
             year: year, month: month, day: day,
             latitude: coordinate.latitude,
             longitude: coordinate.longitude,
-            timezone: TimeZone.current.secondsFromGMT() / 3600
+            timezone: Double(TimeZone.current.secondsFromGMT()) / 3600.0
         )
 
         DispatchQueue.main.async {
@@ -90,7 +90,7 @@ class PrayerTimesManager: ObservableObject {
     private func computePrayerTimes(
         year: Int, month: Int, day: Int,
         latitude: Double, longitude: Double,
-        timezone: Int
+        timezone: Double
     ) -> [Prayer] {
 
         let jd = julianDay(year: year, month: month, day: day)

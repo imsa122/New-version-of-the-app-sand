@@ -38,21 +38,39 @@ extension SplashView {
             )
             .ignoresSafeArea()
             
-            VStack(spacing: 25) {
+            VStack(spacing: 22) {
                 
-                Image("sanadlogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 140, height: 140)
-                    .shadow(radius: 10)
+                ZStack {
+                    Circle()
+                        .fill(Color.white.opacity(0.55))
+                        .frame(width: 185, height: 185)
+                        .blur(radius: 2)
+                    
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 170, height: 170)
+                    
+                    Image("sanadlogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 132, height: 132)
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                }
+                .shadow(color: Color.black.opacity(0.12), radius: 16, x: 0, y: 10)
                 
-                Text("Sanad")
-                    .font(.system(size: 40, weight: .bold))
-                    .foregroundColor(.blue)
+                Text("سند")
+                    .font(.system(size: 48, weight: .heavy))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color(red: 0.00, green: 0.75, blue: 0.65), Color.blue],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
                 
-                Text("معك دائمًا… للراحة والأمان")
-                    .font(.title3)
-                    .foregroundColor(.gray)
+                Text("رفيقك في الأمان")
+                    .font(.title3.weight(.semibold))
+                    .foregroundColor(.secondary)
             }
         }
         .onAppear {

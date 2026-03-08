@@ -111,28 +111,43 @@ struct EnhancedMainView: View {
     // MARK: - Header
 
     private var headerView: some View {
-        VStack(spacing: 8) {
-            Image("sanadlogo")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 96, height: 96)
-                .shadow(color: SanadPalette.emerald.opacity(0.35), radius: 18, x: 0, y: 8)
+        VStack(spacing: 12) {
+            SanadTimeHeader()
 
-            Text("سند")
-                .font(.system(size: 38, weight: .heavy))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [SanadPalette.emerald, SanadPalette.ocean],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 78, height: 78)
 
-            Text("رفيقك في الأمان")
-                .font(.headline)
-                .foregroundColor(.secondary)
+                    Image("sanadlogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 54, height: 54)
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                }
+                .shadow(color: SanadPalette.emerald.opacity(0.24), radius: 10, x: 0, y: 6)
+
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("سند")
+                        .font(.system(size: 34, weight: .heavy))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [SanadPalette.emerald, SanadPalette.ocean],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+
+                    Text("رعاية ذكية لعائلتك")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+            }
         }
-        .padding(.top, 10)
+        .padding(.top, 6)
     }
 
     // MARK: - Main Buttons

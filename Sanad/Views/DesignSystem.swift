@@ -48,6 +48,74 @@ struct SanadGradientBackground: View {
     }
 }
 
+// MARK: - Vision 2030 Time Header
+
+struct SanadTimeHeader: View {
+    @State private var now = Date()
+    private let timer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
+
+    private var timeText: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ar_SA")
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        return formatter.string(from: now)
+    }
+
+    private var dateText: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ar_SA")
+        formatter.dateFormat = "EEEE، d MMMM yyyy"
+        return formatter.string(from: now)
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(timeText)
+                    .font(.system(size: 34, weight: .heavy, design: .rounded))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [SanadPalette.ink, SanadPalette.ocean],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+
+                Text(dateText)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundColor(.secondary)
+
+                Text("التحول الرقمي للرعاية الآمنة")
+                    .font(.caption)
+                    .foregroundColor(SanadPalette.emerald)
+            }
+
+            Spacer()
+
+            ZStack {
+                Circle()
+                    .fill(SanadPalette.emerald.opacity(0.16))
+                    .frame(width: 56, height: 56)
+                Image(systemName: "shield.checkered")
+                    .font(.title3.weight(.bold))
+                    .foregroundColor(SanadPalette.emerald)
+            }
+        }
+        .padding(14)
+        .background(.ultraThinMaterial)
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(Color.white.opacity(0.35), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 6)
+        .onReceive(timer) { newDate in
+            now = newDate
+        }
+    }
+}
+
 // MARK: - Glass Card
 
 struct GlassCard<Content: View>: View {

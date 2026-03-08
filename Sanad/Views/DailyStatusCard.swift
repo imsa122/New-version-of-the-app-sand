@@ -12,6 +12,7 @@ struct DailyStatusCard: View {
             
             Text("حالة اليوم")
                 .font(.system(size: 26, weight: .bold))
+                .foregroundColor(Color(red: 0.14, green: 0.19, blue: 0.28))
             
             // 💊 حالة الأدوية
             statusRow(
@@ -45,14 +46,14 @@ struct DailyStatusCard: View {
             // 🕒 وقت آخر جرعة
             if let lastTime = tracker.lastTakenTimeToday {
                 Text("آخر جرعة: \(formatTime(lastTime))")
-                    .font(.system(size: 16))
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Color(red: 0.26, green: 0.30, blue: 0.36))
             }
             
             // 🕒 آخر تحديث فعلي (الآن)
             Text("آخر تحديث: \(formatTime(Date()))")
-                .font(.footnote)
-                .foregroundColor(.secondary)
+                .font(.footnote.weight(.semibold))
+                .foregroundColor(Color(red: 0.30, green: 0.34, blue: 0.40))
         }
         .padding()
         .background(backgroundColor)
@@ -65,8 +66,8 @@ struct DailyStatusCard: View {
     
     private var backgroundColor: Color {
         tracker.hasTakenMedicationToday
-        ? Color.white
-        : Color.orange.opacity(0.08)
+        ? Color.white.opacity(0.96)
+        : Color(red: 1.0, green: 0.97, blue: 0.92)
     }
     
     // MARK: - Status Row
@@ -78,7 +79,8 @@ struct DailyStatusCard: View {
                 .font(.title2)
             
             Text(text)
-                .font(.system(size: 20))
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(Color(red: 0.14, green: 0.19, blue: 0.28))
             
             Spacer()
         }

@@ -2,8 +2,8 @@
 //  EnhancedMainView.swift
 //  Sanad
 //
-//  Updated: Added DailyStatusCard, ActivityLog navigation,
-//           Health Dashboard navigation, Dark Mode support
+//  Premium redesign: modern background, elevated actions,
+//  richer visual hierarchy while preserving existing functionality.
 //
 
 import SwiftUI
@@ -25,39 +25,26 @@ struct EnhancedMainView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-
-                // 🎨 Adaptive background — supports Dark Mode
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.88, green: 0.96, blue: 0.93).opacity(0.6),
-                        Color(.systemBackground)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
+                SanadGradientBackground()
 
                 ScrollView {
                     VStack(spacing: 20) {
-
                         headerView
 
-                        // ✅ NEW: Daily Status Card — shows medication, location, alert status
-                        DailyStatusCard(
-                            isInsideHomeArea: locationManager.isInsideHomeArea,
-                            hasActiveAlert: emergencyManager.isEmergencyActive
-                        )
+                        GlassCard {
+                            DailyStatusCard(
+                                isInsideHomeArea: locationManager.isInsideHomeArea,
+                                hasActiveAlert: emergencyManager.isEmergencyActive
+                            )
+                        }
 
                         mainButtonsView
-
                         voiceCommandButton
-
                         bottomNavigationView
                     }
                     .padding()
                 }
             }
-
             .navigationBarHidden(true)
 
             // MARK: - Navigation Destinations
@@ -67,20 +54,15 @@ struct EnhancedMainView: View {
             .navigationDestination(isPresented: $showMedications) {
                 MedicationListView()
             }
-            // ✅ NEW: Activity Log navigation
             .navigationDestination(isPresented: $showActivityLog) {
                 ActivityLogView()
             }
-            // ✅ NEW: Health Dashboard navigation
             .navigationDestination(isPresented: $showHealthDashboard) {
                 HealthDashboardView()
             }
-            // ✅ NEW: Prayer Times navigation
             .navigationDestination(isPresented: $showPrayerTimes) {
                 PrayerTimesView()
             }
-
-            // ✅ NEW: Family Dashboard navigation
             .navigationDestination(isPresented: $showFamilyDashboard) {
                 FamilyDashboardView()
             }
@@ -133,40 +115,52 @@ struct EnhancedMainView: View {
             Image("sanadlogo")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 100, height: 100)
-                .shadow(radius: 5)
+                .frame(width: 96, height: 96)
+                .shadow(color: SanadPalette.emerald.opacity(0.35), radius: 18, x: 0, y: 8)
 
             Text("سند")
-                .font(.system(size: 36, weight: .bold))
-                .foregroundColor(.green)
+                .font(.system(size: 38, weight: .heavy))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [SanadPalette.emerald, SanadPalette.ocean],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
 
             Text("رفيقك في الأمان")
                 .font(.headline)
                 .foregroundColor(.secondary)
         }
-        .padding(.top, 16)
+        .padding(.top, 10)
     }
 
     // MARK: - Main Buttons
 
     private var mainButtonsView: some View {
-        VStack(spacing: 16) {
-            ModernBigButton(
+        VStack(spacing: 14) {
+            PremiumActionButton(
                 title: "اتصل بالعائلة",
+                subtitle: "اتصال سريع وآمن",
                 icon: "phone.fill",
-                color: .green,
+                gradient: [SanadPalette.emerald, SanadPalette.emerald.opacity(0.78)],
                 action: viewModel.callFamily
             )
-            ModernBigButton(
+
+            PremiumActionButton(
                 title: "أرسل موقعي",
+                subtitle: "مشاركة فورية للموقع",
                 icon: "location.fill",
-                color: .blue,
+                gradient: [SanadPalette.ocean, SanadPalette.violet],
                 action: viewModel.sendLocation
             )
-            ModernBigButton(
+
+            PremiumActionButton(
                 title: "المساعدة الطارئة",
+                subtitle: "تنبيه عاجل للعائلة",
                 icon: "siren.fill",
-                color: .red,
+                gradient: [SanadPalette.coral, Color.red.opacity(0.9)],
+                isEmergency: true,
                 action: viewModel.requestEmergencyHelp
             )
         }
@@ -183,59 +177,65 @@ struct EnhancedMainView: View {
             }
         } label: {
             HStack(spacing: 10) {
-                Image(systemName: voiceManager.isListening ? "mic.fill" : "mic")
-                    .font(.title2)
+                Image(systemName: voiceManager.isListening ? "waveform.circle.fill" : "mic.fill")
+                    .font(.title2.weight(.bold))
+
                 Text(voiceManager.isListening ? "جاري الاستماع..." : "اضغط للأوامر الصوتية")
                     .font(.headline)
             }
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
-            .frame(height: 60)
+            .frame(height: 64)
             .background(
                 LinearGradient(
                     colors: voiceManager.isListening
-                        ? [Color.orange, Color.orange.opacity(0.8)]
-                        : [Color.purple, Color.purple.opacity(0.8)],
-                    startPoint: .leading,
-                    endPoint: .trailing
+                        ? [SanadPalette.amber, Color.orange]
+                        : [SanadPalette.violet, SanadPalette.ocean],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
                 )
             )
-            .cornerRadius(20)
-            .shadow(radius: 8)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.white.opacity(0.25), lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .shadow(color: Color.black.opacity(0.18), radius: 12, x: 0, y: 7)
         }
+        .buttonStyle(.plain)
         .animation(.easeInOut, value: voiceManager.isListening)
     }
 
     // MARK: - Bottom Navigation
-    // ✅ Updated: Added Activity Log, Health, Prayer Times buttons
 
     private var bottomNavigationView: some View {
         VStack(spacing: 12) {
-            // Row 1
             HStack(spacing: 12) {
-                SmallCardButton(title: "الأدوية", icon: "pills.fill", color: .orange) {
+                QuickNavCard(title: "الأدوية", icon: "pills.fill", color: .orange) {
                     showMedications = true
                 }
-                SmallCardButton(title: "الصحة", icon: "heart.fill", color: .pink) {
+
+                QuickNavCard(title: "الصحة", icon: "heart.fill", color: .pink) {
                     showHealthDashboard = true
                 }
             }
-            // Row 2
+
             HStack(spacing: 12) {
-                SmallCardButton(title: "أوقات الصلاة", icon: "moon.stars.fill", color: .indigo) {
+                QuickNavCard(title: "أوقات الصلاة", icon: "moon.stars.fill", color: .indigo) {
                     showPrayerTimes = true
                 }
-                SmallCardButton(title: "سجل النشاط", icon: "list.bullet.clipboard.fill", color: .teal) {
+
+                QuickNavCard(title: "سجل النشاط", icon: "list.bullet.clipboard.fill", color: .teal) {
                     showActivityLog = true
                 }
             }
-            // Row 3
+
             HStack(spacing: 12) {
-                SmallCardButton(title: "الإعدادات", icon: "gearshape.fill", color: .gray) {
+                QuickNavCard(title: "الإعدادات", icon: "gearshape.fill", color: .gray) {
                     showSettings = true
                 }
 
-                SmallCardButton(title: "العائلة", icon: "person.2.fill", color: .blue) {
+                QuickNavCard(title: "العائلة", icon: "person.2.fill", color: .blue) {
                     showFamilyDashboard = true
                 }
             }
@@ -243,73 +243,6 @@ struct EnhancedMainView: View {
         .padding(.bottom, 8)
     }
 }
-
-
-// MARK: - Modern Big Button
-
-struct ModernBigButton: View {
-    let title: String
-    let icon: String
-    let color: Color
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 15) {
-                
-                Image(systemName: icon)
-                    .font(.title2)
-                
-                Text(title)
-                    .font(.system(size: 22, weight: .bold))
-                
-                Spacer()
-            }
-            .foregroundColor(.white)
-            .padding()
-            .frame(height: 75)
-            .background(
-                LinearGradient(
-                    colors: [color, color.opacity(0.8)],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
-            .cornerRadius(22)
-            .shadow(color: color.opacity(0.3), radius: 10, x: 0, y: 5)
-        }
-    }
-}
-
-
-// MARK: - Small Card Button
-
-struct SmallCardButton: View {
-    let title: String
-    let icon: String
-    let color: Color
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 10) {
-                Image(systemName: icon)
-                    .font(.title)
-                    .foregroundColor(color)
-                
-                Text(title)
-                    .font(.headline)
-                    .foregroundColor(.primary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(.ultraThinMaterial)
-            .cornerRadius(20)
-            .shadow(radius: 5)
-        }
-    }
-}
-
 
 // MARK: - Preview
 

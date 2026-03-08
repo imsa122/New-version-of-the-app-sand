@@ -8,6 +8,18 @@
 import Foundation
 import CoreLocation
 
+enum UserAppMode: String, Codable, CaseIterable {
+    case elder = "elder"
+    case family = "family"
+
+    var displayNameArabic: String {
+        switch self {
+        case .elder: return "وضع الأب / المستخدم"
+        case .family: return "وضع العائلة / الابن"
+        }
+    }
+}
+
 /// إعدادات التطبيق - App Settings Model
 struct AppSettings: Codable {
     var fontSize: FontSize
@@ -22,6 +34,12 @@ struct AppSettings: Codable {
     var iCloudSyncEnabled: Bool           // ✅ NEW: iCloud sync toggle
     var prayerNotificationsEnabled: Bool  // ✅ NEW: Prayer notifications toggle
 
+    // ✅ Phase 2 + 3: Family linking (Option B invite code)
+    var userMode: UserAppMode
+    var linkedElderId: String?
+    var familyInviteCode: String?
+    var lastLinkDate: Date?
+
     init(
         fontSize: FontSize = .large,
         homeLocation: HomeLocation? = nil,
@@ -33,7 +51,11 @@ struct AppSettings: Codable {
         colorScheme: AppColorScheme = .system,
         healthKitEnabled: Bool = false,
         iCloudSyncEnabled: Bool = false,
-        prayerNotificationsEnabled: Bool = false
+        prayerNotificationsEnabled: Bool = false,
+        userMode: UserAppMode = .elder,
+        linkedElderId: String? = nil,
+        familyInviteCode: String? = nil,
+        lastLinkDate: Date? = nil
     ) {
         self.fontSize = fontSize
         self.homeLocation = homeLocation
@@ -46,6 +68,10 @@ struct AppSettings: Codable {
         self.healthKitEnabled = healthKitEnabled
         self.iCloudSyncEnabled = iCloudSyncEnabled
         self.prayerNotificationsEnabled = prayerNotificationsEnabled
+        self.userMode = userMode
+        self.linkedElderId = linkedElderId
+        self.familyInviteCode = familyInviteCode
+        self.lastLinkDate = lastLinkDate
     }
 }
 

@@ -216,31 +216,43 @@ class HealthKitManager: ObservableObject {
     /// تقييم عدد الخطوات - Steps Assessment
     var stepsAssessment: StepsAssessment {
         switch dailySteps {
-        case 0..<2000:   return .low
+        case 0..<2000: return .low
         case 2000..<5000: return .moderate
         case 5000..<10000: return .good
-        default:          return .excellent
+        default: return .excellent
         }
     }
 
     /// تقييم معدل القلب - Heart Rate Assessment
     var heartRateAssessment: HeartRateAssessment {
         switch heartRate {
-        case 0:          return .unknown
-        case ..<60:      return .low
-        case 60...100:   return .normal
-        default:         return .high
+        case 0: return .unknown
+        case ..<60: return .low
+        case 60...100: return .normal
+        default: return .high
         }
     }
 
     /// تقييم النوم - Sleep Assessment
     var sleepAssessment: SleepAssessment {
         switch sleepHours {
-        case 0..<4:   return .poor
-        case 4..<6:   return .fair
-        case 6...9:   return .good
-        default:      return .tooMuch
+        case 0..<4: return .poor
+        case 4..<6: return .fair
+        case 6...9: return .good
+        default: return .tooMuch
         }
+    }
+
+    // MARK: - Phase 2: Manual Blood Pressure Helpers
+
+    func evaluateBloodPressure(systolic: Int, diastolic: Int) -> BloodPressureStatus {
+        if systolic < 90 || diastolic < 60 {
+            return .low
+        }
+        if systolic >= 140 || diastolic >= 90 {
+            return .high
+        }
+        return .normal
     }
 }
 
@@ -251,18 +263,18 @@ enum StepsAssessment {
 
     var arabicLabel: String {
         switch self {
-        case .low:       return "منخفض"
-        case .moderate:  return "متوسط"
-        case .good:      return "جيد"
+        case .low: return "منخفض"
+        case .moderate: return "متوسط"
+        case .good: return "جيد"
         case .excellent: return "ممتاز"
         }
     }
 
     var color: String {
         switch self {
-        case .low:       return "red"
-        case .moderate:  return "orange"
-        case .good:      return "green"
+        case .low: return "red"
+        case .moderate: return "orange"
+        case .good: return "green"
         case .excellent: return "blue"
         }
     }
@@ -274,9 +286,9 @@ enum HeartRateAssessment {
     var arabicLabel: String {
         switch self {
         case .unknown: return "غير متوفر"
-        case .low:     return "منخفض"
-        case .normal:  return "طبيعي"
-        case .high:    return "مرتفع"
+        case .low: return "منخفض"
+        case .normal: return "طبيعي"
+        case .high: return "مرتفع"
         }
     }
 }
@@ -286,10 +298,32 @@ enum SleepAssessment {
 
     var arabicLabel: String {
         switch self {
-        case .poor:    return "غير كافٍ"
-        case .fair:    return "مقبول"
-        case .good:    return "جيد"
+        case .poor: return "غير كافٍ"
+        case .fair: return "مقبول"
+        case .good: return "جيد"
         case .tooMuch: return "كثير"
+        }
+    }
+}
+
+enum BloodPressureStatus {
+    case low
+    case normal
+    case high
+
+    var arabicLabel: String {
+        switch self {
+        case .low: return "منخفض"
+        case .normal: return "طبيعي"
+        case .high: return "مرتفع"
+        }
+    }
+
+    var color: String {
+        switch self {
+        case .low: return "blue"
+        case .normal: return "green"
+        case .high: return "red"
         }
     }
 }

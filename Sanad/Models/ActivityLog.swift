@@ -102,6 +102,14 @@ enum ActivityType: String, Codable, CaseIterable {
     case medicationDeleted
     case appLaunched
     case appClosed
+    case familyLinkCodeGenerated
+    case familyLinked
+    case familyLinkRevoked
+    case familyLinkFailedAttempt
+    case bloodPressureLogged
+    case bloodPressureAlert
+    case inactivityDetected
+    case prayerCheckIn
     case error
     case warning
     case info
@@ -126,6 +134,14 @@ enum ActivityType: String, Codable, CaseIterable {
         case .medicationDeleted: return "حذف دواء"
         case .appLaunched: return "فتح التطبيق"
         case .appClosed: return "إغلاق التطبيق"
+        case .familyLinkCodeGenerated: return "إنشاء رمز ربط"
+        case .familyLinked: return "ربط عائلي"
+        case .familyLinkRevoked: return "إلغاء ربط عائلي"
+        case .familyLinkFailedAttempt: return "فشل ربط عائلي"
+        case .bloodPressureLogged: return "تسجيل ضغط الدم"
+        case .bloodPressureAlert: return "تنبيه ضغط الدم"
+        case .inactivityDetected: return "عدم نشاط"
+        case .prayerCheckIn: return "تأكيد الصلاة"
         case .error: return "خطأ"
         case .warning: return "تحذير"
         case .info: return "معلومة"
@@ -152,6 +168,14 @@ enum ActivityType: String, Codable, CaseIterable {
         case .medicationDeleted: return "trash.fill"
         case .appLaunched: return "app.badge.fill"
         case .appClosed: return "power"
+        case .familyLinkCodeGenerated: return "number.circle.fill"
+        case .familyLinked: return "link.circle.fill"
+        case .familyLinkRevoked: return "link.badge.minus"
+        case .familyLinkFailedAttempt: return "xmark.shield.fill"
+        case .bloodPressureLogged: return "waveform.path.ecg"
+        case .bloodPressureAlert: return "heart.text.square.fill"
+        case .inactivityDetected: return "zzz"
+        case .prayerCheckIn: return "moon.stars.fill"
         case .error: return "xmark.octagon.fill"
         case .warning: return "exclamationmark.triangle.fill"
         case .info: return "info.circle.fill"
@@ -160,13 +184,13 @@ enum ActivityType: String, Codable, CaseIterable {
     
     var defaultSeverity: LogSeverity {
         switch self {
-        case .emergency, .fallDetection, .error:
+        case .emergency, .fallDetection, .bloodPressureAlert, .error:
             return .critical
-        case .medicationMissed, .geofenceExit, .warning:
+        case .medicationMissed, .geofenceExit, .warning, .familyLinkFailedAttempt, .inactivityDetected:
             return .high
-        case .locationShared, .phoneCall, .voiceCommand:
+        case .locationShared, .phoneCall, .voiceCommand, .familyLinkCodeGenerated:
             return .medium
-        case .medicationTaken, .geofenceEntry:
+        case .medicationTaken, .geofenceEntry, .familyLinked, .prayerCheckIn, .bloodPressureLogged:
             return .low
         default:
             return .info

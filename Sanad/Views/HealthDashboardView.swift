@@ -12,6 +12,9 @@ struct HealthDashboardView: View {
 
     @StateObject private var healthKit = HealthKitManager.shared
     @State private var isRefreshing = false
+    @State private var systolicInput = ""
+    @State private var diastolicInput = ""
+    @State private var bpStatusText: String?
 
     var body: some View {
         ScrollView {
@@ -31,6 +34,7 @@ struct HealthDashboardView: View {
                     stepsCard
                     heartRateCard
                     sleepCard
+                    bloodPressureManualCard
                     lastUpdatedView
                 }
             }
@@ -163,6 +167,51 @@ struct HealthDashboardView: View {
         case .good:    return .green
         case .tooMuch: return .purple
         }
+    }
+
+    // MARK: - Phase 2: Manual Blood Pressure
+
+    private var bloodPressureManualCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("تسجيل ضغط الدم (يدوي)")
+                .font(.headline)
+
+            HStack(spacing: 10) {
+                TextField("الانقباضي", text: $systolicInput)
+                    .keyboardType(.numberPad)
+                    .textFieldStyle(.roundedBorder)
+
+                TextField("الانبساطي", text: $diastolicInput)
+                    .keyboardType(.numberPad)
+                    .textFieldStyle(.roundedBorder)
+            }
+
+            Button("حفظ القراءة") {
+                guard
+                    let systolic = Int(systolicInput),
+                    let diastolic = Int(diastolicInput)
+                else { return }
+
+                let status = healthKit.evaluateBloodPressure(systolic: systolic, diastolic: diastolic)
+                bpStatusText = "الحالة: \(status.arabicLabel)"
+
+                ActivityLogger.shared.logBloodPressure(
+                    systolic: systolic,
+                    diastolic: diastolic,
+                    status: status.arabicLabel
+                )
+            }
+            .buttonStyle(.borderedProminent)
+
+            if let bpStatusText {
+                Text(bpStatusText)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(20)
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(20)
     }
 
     // MARK: - Last Updated

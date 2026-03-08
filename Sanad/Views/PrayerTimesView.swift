@@ -14,6 +14,7 @@ struct PrayerTimesView: View {
     @State private var showQibla = false
     @State private var notificationsEnabled = false
     @AppStorage("prayerNotificationsEnabled") private var prayerNotificationsEnabled = false
+    @State private var selectedCheckInPrayer: Prayer?
 
     var body: some View {
         ScrollView {
@@ -35,6 +36,9 @@ struct PrayerTimesView: View {
 
                 // MARK: - Notifications Toggle
                 notificationsSection
+
+                // MARK: - Phase 2: Prayer Check-in
+                prayerCheckInSection
             }
             .padding()
         }
@@ -220,6 +224,50 @@ struct PrayerTimesView: View {
                 } else {
                     manager.cancelPrayerNotifications()
                 }
+            }
+        }
+        .padding(20)
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(20)
+    }
+
+    // MARK: - Prayer Check-in Section
+
+    private var prayerCheckInSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("تأكيد أداء الصلاة")
+                .font(.headline)
+
+            Text("يمكنك تأكيد أداء آخر صلاة لإظهارها في سجل النشاط")
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            if let lastPrayer = manager.prayerTimes.last(where: { $0.isPassed }) {
+                Button {
+                    selectedCheckInPrayer = lastPrayer
+                    ActivityLogger.shared.logPrayerCheckIn(prayerName: lastPrayer.name, completed: true)
+                } label: {
+                    HStack {
+                        Image(systemName: "checkmark.seal.fill")
+                            .foregroundColor(.green)
+                        Text("تأكيد أداء صلاة \(lastPrayer.name)")
+                            .font(.headline)
+                        Spacer()
+                    }
+                    .padding()
+                    .background(Color.green.opacity(0.12))
+                    .cornerRadius(14)
+                }
+            } else {
+                Text("لا توجد صلاة ماضية للتأكيد حالياً")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+
+            if let selectedCheckInPrayer {
+                Text("✅ تم تأكيد: \(selectedCheckInPrayer.name)")
+                    .font(.caption)
+                    .foregroundColor(.green)
             }
         }
         .padding(20)

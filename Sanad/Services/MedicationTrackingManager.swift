@@ -52,6 +52,39 @@ class MedicationTrackingManager: ObservableObject {
             )
         }
     }
+
+    // MARK: - Phase 2: Explicit confirmation hooks
+
+    func confirmMedicationTaken(medicationID: UUID, medicationName: String) {
+        markMedicationTaken(medicationID: medicationID)
+        ActivityLogger.shared.log(
+            type: .medicationTaken,
+            title: "تأكيد تناول الدواء",
+            description: "تم تأكيد تناول \(medicationName)",
+            severity: .low,
+            metadata: [
+                "medication_name": medicationName,
+                "confirmed_by_user": "true"
+            ],
+            relatedMedicationId: medicationID
+        )
+    }
+
+    func markMedicationMissed(medicationID: UUID, medicationName: String) {
+        let log = MedicationLog(
+            medicationID: medicationID,
+            date: Date(),
+            wasTaken: false
+        )
+
+        logs.append(log)
+        saveLogs()
+
+        ActivityLogger.shared.logMedicationMissed(
+            medicationId: medicationID,
+            medicationName: medicationName
+        )
+    }
     
     // MARK: - هل تم أخذ دواء اليوم
     

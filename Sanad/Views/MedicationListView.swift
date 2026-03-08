@@ -68,13 +68,24 @@ struct MedicationListView: View {
                     )
                 } else {
                     ForEach(viewModel.medications) { medication in
-                        MedicationRow(medication: medication) {
-                            selectedMedication = medication
-                        } onToggle: {
-                            viewModel.toggleMedicationActive(medication)
-                        } onSpeak: {
-                            viewModel.speakReminder(for: medication)
-                        }
+                        MedicationRow(
+                            medication: medication,
+                            onTap: {
+                                selectedMedication = medication
+                            },
+                            onToggle: {
+                                viewModel.toggleMedicationActive(medication)
+                            },
+                            onSpeak: {
+                                viewModel.speakReminder(for: medication)
+                            },
+                            onConfirmTaken: {
+                                MedicationTrackingManager.shared.confirmMedicationTaken(
+                                    medicationID: medication.id,
+                                    medicationName: medication.name
+                                )
+                            }
+                        )
                     }
                     .onDelete { indexSet in
                         indexSet.forEach { index in
@@ -173,6 +184,7 @@ struct MedicationRow: View {
     let onTap: () -> Void
     let onToggle: () -> Void
     let onSpeak: () -> Void
+    let onConfirmTaken: () -> Void
     
     var body: some View {
         Button(action: onTap) {
@@ -220,6 +232,11 @@ struct MedicationRow: View {
                     Button(action: onSpeak) {
                         Image(systemName: "speaker.wave.2.fill")
                             .foregroundColor(.purple)
+                    }
+
+                    Button(action: onConfirmTaken) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
                     }
                     
                     Toggle("", isOn: Binding(

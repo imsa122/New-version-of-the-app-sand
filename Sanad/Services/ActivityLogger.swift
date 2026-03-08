@@ -5,10 +5,9 @@
 //  Service for logging and managing activity logs
 //  Provides comprehensive activity tracking and analysis
 //
-import UIKit
-
 import Foundation
 import CoreLocation
+import UIKit
 
 /// مسجل النشاط - Activity Logger
 class ActivityLogger {
@@ -140,6 +139,35 @@ class ActivityLogger {
             severity: .high,
             metadata: ["medication_name": medicationName],
             relatedMedicationId: medicationId
+        )
+    }
+
+    func logBloodPressure(systolic: Int, diastolic: Int, status: String) {
+        let isAlert = status == "مرتفع" || status == "منخفض"
+
+        log(
+            type: isAlert ? .bloodPressureAlert : .bloodPressureLogged,
+            title: isAlert ? "تنبيه ضغط الدم" : "تسجيل ضغط الدم",
+            description: "القراءة: \(systolic)/\(diastolic) - الحالة: \(status)",
+            severity: isAlert ? .critical : .low,
+            metadata: [
+                "systolic": "\(systolic)",
+                "diastolic": "\(diastolic)",
+                "status": status
+            ]
+        )
+    }
+
+    func logPrayerCheckIn(prayerName: String, completed: Bool) {
+        log(
+            type: .prayerCheckIn,
+            title: "تأكيد الصلاة",
+            description: completed ? "تم تأكيد أداء صلاة \(prayerName)" : "لم يتم تأكيد صلاة \(prayerName)",
+            severity: completed ? .low : .medium,
+            metadata: [
+                "prayer_name": prayerName,
+                "completed": completed ? "true" : "false"
+            ]
         )
     }
     

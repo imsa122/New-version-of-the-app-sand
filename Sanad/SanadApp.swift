@@ -33,6 +33,7 @@ struct SanadApp: App {
                     donateSiriShortcuts()
                     setupWatchConnectivity()
                     setupCloudSync()
+                    setupInactivityMonitoring()
                 }
         }
     }
@@ -96,6 +97,16 @@ struct SanadApp: App {
         if settings.iCloudSyncEnabled {
             CloudSyncManager.shared.setupAutoSync()
             CloudSyncManager.shared.syncAll()
+        }
+    }
+
+    // MARK: - Phase 2: Inactivity Monitoring
+    private func setupInactivityMonitoring() {
+        let settings = StorageManager.shared.loadSettings()
+        if settings.userMode == .elder {
+            InactivityMonitor.shared.startMonitoring(thresholdHours: 2)
+        } else {
+            InactivityMonitor.shared.stopMonitoring()
         }
     }
 }

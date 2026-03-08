@@ -1,30 +1,34 @@
-# TODO: Phase 2 + 3 (Option B) — Elder/Family Monitoring
+# TODO: Phase 2+3 (Option B) - Family Linking Security Upgrade
 
-## ✅ Completed
-- [x] Add app mode/link fields in `AppSettings`
-- [x] Add `FamilyLink` model
-- [x] Add `FamilyLinkManager` service
-- [x] Extend `ActivityType` for BP/inactivity/prayer/family events
-- [x] Add `InactivityMonitor`
-- [x] Add ActivityLogger helpers (`logBloodPressure`, `logPrayerCheckIn`)
-- [x] Add medication confirmation hooks in `MedicationTrackingManager`
-- [x] Add manual BP entry card in `HealthDashboardView`
-- [x] Add prayer check-in in `PrayerTimesView`
-- [x] Add inactivity bootstrap in `SanadApp`
+## ✅ Planning
+- [x] Analyze current family panel/linking implementation
+- [x] Define Option B scope (dual-role + secure code flow)
+- [x] Get user approval
 
-## 🚧 In Progress (approved now)
-- [ ] Create son-side Family Dashboard UI + ViewModel
-- [ ] Add shared elder-status model/service (location/medication/BP/fall)
-- [ ] Wire father-side events to publish elder status updates
-- [ ] Add critical alert hooks for son notification flow (fall + low/high BP)
-- [ ] Integrate Family mode navigation entry points
+## 🚧 Implementation Steps
+- [ ] Upgrade `FamilyLinkManager` security model
+  - [ ] 10-minute expiry
+  - [ ] one-time-use enforcement
+  - [ ] failed-attempt limit + lock
+  - [ ] pending join request + father approval
+- [ ] Update `FamilyDashboardViewModel`
+  - [ ] father: generate code
+  - [ ] family: submit code
+  - [ ] father: approve/reject pending request
+  - [ ] persist role/link settings
+- [ ] Update `FamilyDashboardView`
+  - [ ] add dual sections:
+    - [ ] "أنا الأب" (generate code)
+    - [ ] "أنا أحد أفراد العائلة" (enter code)
+  - [ ] add pending-approval UI
+  - [ ] keep linked status + alerts section
+- [ ] Verify navigation from `EnhancedMainView` family button
 
-## 🧪 Pending Testing
-- [ ] Build compile check (Sanad target)
-- [ ] Critical-path manual test:
-  - [ ] BP save + status + log
-  - [ ] Prayer check-in log
-  - [ ] Medication confirmation flow
-  - [ ] Inactivity monitor elder/family mode behavior
-  - [ ] Family dashboard reflects synced status
-  - [ ] Critical alert events reach family alert feed
+## 🧪 Pending Testing (not executed yet)
+- [ ] Build compile in Xcode (Sanad target)
+- [ ] Father flow: generate code
+- [ ] Family flow: enter valid code
+- [ ] Father approval required before activation
+- [ ] Wrong code lock after max attempts
+- [ ] Expired code rejection
+- [ ] Reuse code rejection after successful link

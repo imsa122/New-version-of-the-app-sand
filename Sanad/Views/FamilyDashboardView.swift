@@ -7,10 +7,14 @@ struct FamilyDashboardView: View {
         ScrollView {
             VStack(spacing: 16) {
                 header
+                rolePanel
+                messagePanel
 
-                if !viewModel.isLinked {
-                    notLinkedView
-                } else {
+                if viewModel.hasPendingApproval {
+                    pendingApprovalCard
+                }
+
+                if viewModel.isLinked {
                     statusCard
                     alertsCard
                 }
@@ -43,7 +47,7 @@ struct FamilyDashboardView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("لوحة متابعة العائلة")
                     .font(.title3.bold())
-                Text("موقع، أدوية، ضغط الدم، وتنبيهات الطوارئ")
+                Text("ربط آمن + موقع، أدوية، ضغط الدم، وتنبيهات الطوارئ")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -55,23 +59,123 @@ struct FamilyDashboardView: View {
         .cornerRadius(16)
     }
 
-    private var notLinkedView: some View {
+    private var rolePanel: some View {
         VStack(spacing: 12) {
-            Image(systemName: "link.badge.plus")
-                .font(.system(size: 42))
-                .foregroundColor(.orange)
+            fatherSection
+            familySection
+        }
+    }
 
-            Text("لا يوجد ربط مع الأب بعد")
+    private var fatherSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("أنا الأب", systemImage: "person.fill")
                 .font(.headline)
 
-            Text("ادخل رمز الدعوة المكوّن من 6 أرقام من جهاز الأب")
+            Text("اضغط لإنشاء رمز ربط من 6 أرقام صالح لمدة 10 دقائق.")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
+
+            Button("إنشاء رمز ربط") {
+                viewModel.generateFatherCode()
+            }
+            .buttonStyle(.borderedProminent)
+
+            if let code = viewModel.inviteCode {
+                HStack {
+                    Text("رمز الربط:")
+                        .font(.subheadline.weight(.semibold))
+                    Text(code)
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundColor(.blue)
+                }
+
+                if let expiresAt = viewModel.expiresAt {
+                    Text("ينتهي: \(expiresAt.formatted(date: .omitted, time: .shortened))")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
         }
-        .padding(24)
+        .padding()
         .background(Color(.secondarySystemBackground))
         .cornerRadius(16)
+    }
+
+    private var familySection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("أنا أحد أفراد العائلة", systemImage: "person.2.fill")
+                .font(.headline)
+
+            Text("أدخل رمز الأب (6 أرقام). سيتم إرسال طلب موافقة للأب أولاً.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+
+            TextField("أدخل الرمز", text: $viewModel.enteredCode)
+                .keyboardType(.numberPad)
+                .textFieldStyle(.roundedBorder)
+
+            Button("متابعة الأب") {
+                viewModel.submitFamilyCode()
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(viewModel.isLocked)
+
+            if viewModel.isLocked {
+                Text("تم قفل المحاولات مؤقتاً لأسباب أمنية.")
+                    .font(.caption)
+                    .foregroundColor(.red)
+            } else {
+                Text("المحاولات المتبقية: \(viewModel.remainingAttempts)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(16)
+    }
+
+    private var pendingApprovalCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("طلب ربط بانتظار موافقتك", systemImage: "checkmark.shield.fill")
+                .font(.headline)
+
+            if let pendingId = viewModel.pendingFamilyId {
+                Text("معرّف العائلة: \(pendingId)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            HStack(spacing: 10) {
+                Button("موافقة") {
+                    viewModel.approvePendingRequest()
+                }
+                .buttonStyle(.borderedProminent)
+
+                Button("رفض", role: .destructive) {
+                    viewModel.rejectPendingRequest()
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+        .padding()
+        .background(Color.green.opacity(0.08))
+        .cornerRadius(16)
+    }
+
+    private var messagePanel: some View {
+        VStack(spacing: 6) {
+            if let info = viewModel.infoMessage {
+                Text(info)
+                    .font(.footnote)
+                    .foregroundColor(.green)
+            }
+            if let error = viewModel.errorMessage {
+                Text(error)
+                    .font(.footnote)
+                    .foregroundColor(.red)
+            }
+        }
     }
 
     private var statusCard: some View {

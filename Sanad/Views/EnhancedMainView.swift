@@ -20,6 +20,7 @@ struct EnhancedMainView: View {
     @State private var showActivityLog = false
     @State private var showHealthDashboard = false
     @State private var showPrayerTimes = false
+    @State private var showFamilyDashboard = false
 
     var body: some View {
         NavigationStack {
@@ -77,6 +78,11 @@ struct EnhancedMainView: View {
             // ✅ NEW: Prayer Times navigation
             .navigationDestination(isPresented: $showPrayerTimes) {
                 PrayerTimesView()
+            }
+
+            // ✅ NEW: Family Dashboard navigation
+            .navigationDestination(isPresented: $showFamilyDashboard) {
+                FamilyDashboardView()
             }
 
             // MARK: - Sheets
@@ -227,6 +233,10 @@ struct EnhancedMainView: View {
             HStack(spacing: 12) {
                 SmallCardButton(title: "الإعدادات", icon: "gearshape.fill", color: .gray) {
                     showSettings = true
+                }
+
+                SmallCardButton(title: "العائلة", icon: "person.2.fill", color: .blue) {
+                    showFamilyDashboard = true
                 }
             }
         }

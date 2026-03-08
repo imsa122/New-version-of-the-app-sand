@@ -1,51 +1,30 @@
-# TODO: Phase 2 + Phase 3 Implementation (Approved)
+# TODO: Phase 2 + 3 (Option B) — Elder/Family Monitoring
 
-## ✅ Planning & Scope Confirmation
-- [x] User approved implementing **Phase 2 + 3 together**
-- [x] User selected **Option B: 6-digit invite code linking**
-- [x] Crash-safe CloudSyncManager already applied
+## ✅ Completed
+- [x] Add app mode/link fields in `AppSettings`
+- [x] Add `FamilyLink` model
+- [x] Add `FamilyLinkManager` service
+- [x] Extend `ActivityType` for BP/inactivity/prayer/family events
+- [x] Add `InactivityMonitor`
+- [x] Add ActivityLogger helpers (`logBloodPressure`, `logPrayerCheckIn`)
+- [x] Add medication confirmation hooks in `MedicationTrackingManager`
+- [x] Add manual BP entry card in `HealthDashboardView`
+- [x] Add prayer check-in in `PrayerTimesView`
+- [x] Add inactivity bootstrap in `SanadApp`
 
----
+## 🚧 In Progress (approved now)
+- [ ] Create son-side Family Dashboard UI + ViewModel
+- [ ] Add shared elder-status model/service (location/medication/BP/fall)
+- [ ] Wire father-side events to publish elder status updates
+- [ ] Add critical alert hooks for son notification flow (fall + low/high BP)
+- [ ] Integrate Family mode navigation entry points
 
-## 📋 Implementation Tasks
-
-### Phase 2: Enhanced Elder Features
-- [x] Add app role/link settings fields in `AppSettings`
-- [x] Add family link model (`FamilyLink.swift`)
-- [ ] Add health check-in extensions for manual BP + prayer + medication confirmation
-- [ ] Create `FamilyLinkManager` service
-- [ ] Create `InactivityMonitor` service
-- [ ] Extend `ActivityLogger` with new event categories
-- [ ] Extend `HealthKitManager` with BP threshold evaluation helper
-- [ ] Extend `MedicationTrackingManager` with explicit medication confirmation hooks
-
-### Phase 3: Family Mode + Dashboard
-- [ ] Create `FamilyModeSelectionView`
-- [ ] Create `InviteCodeView` (generate code / enter code)
-- [ ] Create `FamilyDashboardView`
-- [ ] Create `FamilyDashboardViewModel`
-- [ ] Update `HomeViewModel` for mode-aware behavior
-- [ ] Update `SettingsViewModel` for role + invite/link management
-- [ ] Update `EnhancedMainView` to route elder vs family mode
-- [ ] Update `HealthDashboardView` with manual BP entry
-- [ ] Update `MedicationListView` with “تم التناول” confirmation UX
-- [ ] Update `PrayerTimesView` with post-prayer check-in action
-- [ ] Update app entry/onboarding flow to include role selection
-
----
-
-## 🧪 Verification Checklist
-- [ ] Elder can generate 6-digit invite code
-- [ ] Family can join using valid invite code
-- [ ] Invalid invite code shows proper error
-- [ ] Manual BP entry works and flags high/low values
-- [ ] Inactivity alert triggers after configured threshold
-- [ ] Medication “taken” confirmation updates activity log
-- [ ] Prayer check-in writes status event
-- [ ] Family dashboard reflects latest elder status/events
-- [ ] No crashes navigating main app/settings/family views
-
----
-
-## 🚀 Status
-**In Progress** — starting with model + service foundation.
+## 🧪 Pending Testing
+- [ ] Build compile check (Sanad target)
+- [ ] Critical-path manual test:
+  - [ ] BP save + status + log
+  - [ ] Prayer check-in log
+  - [ ] Medication confirmation flow
+  - [ ] Inactivity monitor elder/family mode behavior
+  - [ ] Family dashboard reflects synced status
+  - [ ] Critical alert events reach family alert feed

@@ -200,6 +200,11 @@ struct HealthDashboardView: View {
                     diastolic: diastolic,
                     status: status.arabicLabel
                 )
+                ElderStatusSyncService.shared.publishBloodPressure(
+                    systolic: systolic,
+                    diastolic: diastolic,
+                    statusArabic: status.arabicLabel
+                )
             }
             .buttonStyle(.borderedProminent)
 

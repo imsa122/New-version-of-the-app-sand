@@ -50,6 +50,7 @@ class MedicationTrackingManager: ObservableObject {
                 medicationId: medicationID,
                 medicationName: medication.name
             )
+            ElderStatusSyncService.shared.publishMedicationTaken(name: medication.name)
         }
     }
 
@@ -84,6 +85,7 @@ class MedicationTrackingManager: ObservableObject {
             medicationId: medicationID,
             medicationName: medicationName
         )
+        ElderStatusSyncService.shared.publishMedicationMissed(name: medicationName)
     }
     
     // MARK: - هل تم أخذ دواء اليوم

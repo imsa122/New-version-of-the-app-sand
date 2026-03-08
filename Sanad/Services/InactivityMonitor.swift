@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import Combine
 
 final class InactivityMonitor: ObservableObject {
     static let shared = InactivityMonitor()
